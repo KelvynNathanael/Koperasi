@@ -79,7 +79,14 @@
                 </li>
                 <li class="list-group-item d-flex justify-content-between py-3 px-4">
                     <span class="text-muted small">Durasi</span>
-                    <span class="small fw-semibold">{{ $loan->duration_months }} bulan</span>
+                    <span class="small fw-semibold">
+                        {{ $loan->duration_months }}
+                        {{ match($loan->installment_frequency) {
+                            'daily'   => 'hari',
+                            'weekly'  => 'minggu',
+                            default   => 'bulan',
+                        } }}
+                    </span>
                 </li>
                 <li class="list-group-item d-flex justify-content-between py-3 px-4">
                     <span class="text-muted small">Tanggal Mulai</span>

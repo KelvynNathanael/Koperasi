@@ -11,7 +11,7 @@ class Loan extends Model
     protected $fillable = [
         'member_id', 'principal_amount', 'interest_percent',
         'total_due', 'remaining_balance', 'duration_months',
-        'start_date', 'status', 'notes',
+        'start_date', 'status', 'notes', 'installment_frequency',
     ];
 
     protected $casts = [
@@ -19,7 +19,7 @@ class Loan extends Model
         'interest_percent'  => 'decimal:2',
         'total_due'         => 'decimal:2',
         'remaining_balance' => 'decimal:2',
-        'start_date'        => 'date:Y-m-d', // ← tambah format eksplisit
+        'start_date'        => 'date:Y-m-d',
     ];
 
     // ── Relations ──────────────────────────────────────────────────────────────

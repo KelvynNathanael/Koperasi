@@ -43,12 +43,13 @@ class LoanController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $data = $request->validate([
-            'member_id'       => 'required|exists:members,id',
-            'principal_amount'=> 'required|numeric|min:1',
-            'interest_percent'=> 'required|numeric|min:0|max:100',
-            'duration_months' => 'required|integer|min:1|max:360',
-            'start_date'      => 'required|date',
-            'notes'           => 'nullable|string',
+            'member_id'              => 'required|exists:members,id',
+            'principal_amount'       => 'required|numeric|min:1',
+            'interest_percent'       => 'required|numeric|min:0|max:100',
+            'installment_frequency'  => 'required|in:daily,weekly,monthly',
+            'duration_months'        => 'required|integer|min:1|max:360',
+            'start_date'             => 'required|date',
+            'notes'                  => 'nullable|string',
         ]);
 
         DB::transaction(function () use ($data) {
@@ -61,18 +62,18 @@ class LoanController extends Controller
             );
 
             $loan = Loan::create([
-                'member_id'         => $data['member_id'],
-                'principal_amount'  => $principal,
-                'interest_percent'  => $interest,
-                'total_due'         => $totalDue,
-                'remaining_balance' => $totalDue,
-                'duration_months'   => $data['duration_months'],
-                'start_date'        => $data['start_date'],
-                'status'            => 'active',
-                'notes'             => $data['notes'] ?? null,
+                'member_id'              => $data['member_id'],
+                'principal_amount'       => $principal,
+                'interest_percent'       => $interest,
+                'total_due'              => $totalDue,
+                'remaining_balance'      => $totalDue,
+                'installment_frequency'  => $data['installment_frequency'],
+                'duration_months'        => $data['duration_months'],
+                'start_date'             => $data['start_date'],
+                'status'                 => 'active',
+                'notes'                  => $data['notes'] ?? null,
             ]);
 
-            // Generate jadwal cicilan
             $loan->generateInstallments();
 
             // Catat ke cash_flows sebagai uang keluar

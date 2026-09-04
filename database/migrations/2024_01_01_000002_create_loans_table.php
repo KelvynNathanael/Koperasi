@@ -16,6 +16,7 @@ return new class extends Migration
             $table->decimal('total_due', 15, 2);
             $table->decimal('remaining_balance', 15, 2);
             $table->unsignedSmallInteger('duration_months');
+            $table->enum('installment_frequency', ['daily', 'weekly', 'monthly'])->default('monthly');
             $table->date('start_date');
             $table->enum('status', ['active', 'paid', 'overdue', 'cancelled'])->default('active');
             $table->text('notes')->nullable();

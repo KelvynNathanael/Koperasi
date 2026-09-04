@@ -87,7 +87,14 @@
                             {{ $loan->remaining_balance > 0 ? 'text-danger' : 'text-success' }}">
                             Rp {{ number_format($loan->remaining_balance, 0, ',', '.') }}
                         </td>
-                        <td class="small text-muted">{{ $loan->duration_months }} bln</td>
+                        <td class="small text-muted">
+                            {{ $loan->duration_months }}
+                            {{ match($loan->installment_frequency) {
+                                'daily'   => 'hari',
+                                'weekly'  => 'minggu',
+                                default   => 'bln',
+                            } }}
+                        </td>
                         <td class="small text-muted">{{ $loan->start_date->format('d/m/Y') }}</td>
                         <td>
                             <span class="badge rounded-pill badge-status-{{ $loan->status }}">
