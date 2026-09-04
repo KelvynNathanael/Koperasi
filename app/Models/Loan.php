@@ -64,25 +64,46 @@ class Loan extends Model
      */
     public function generateInstallments(): void
     {
-        $monthly = bcdiv((string) $this->total_due, (string) $this->duration_months, 2);
+        $per = bcdiv((string) $this->total_due, (string) $this->duration_months, 2);
 
-        $totalScheduled = bcmul($monthly, (string) ($this->duration_months - 1), 2);
+        $totalScheduled = bcmul($per, (string) ($this->duration_months - 1), 2);
         $lastAmount     = bcsub((string) $this->total_due, $totalScheduled, 2);
 
         $dueDate = \Carbon\Carbon::parse($this->start_date);
 
         for ($i = 1; $i <= $this->duration_months; $i++) {
-            $dueDate->addMonth();
+            $dueDate = $this->nextDueDate($dueDate);
+
             LoanInstallment::create([
                 'loan_id'            => $this->id,
                 'installment_number' => $i,
                 'due_date'           => $dueDate->toDateString(),
-                // ↓ cast ke float untuk resolve 'decimal|null' mismatch
-                'scheduled_amount'   => (float) ($i === $this->duration_months ? $lastAmount : $monthly),
+                'scheduled_amount'   => (float) ($i === $this->duration_months ? $lastAmount : $per),
                 'paid_amount'        => 0,
                 'status'             => 'unpaid',
             ]);
         }
+    }
+
+    private function nextDueDate(\Carbon\Carbon $date): \Carbon\Carbon
+    {
+        return match ($this->installment_frequency) {
+            'daily'   => $this->nextDailyDueDate($date),
+            'weekly'  => $date->addWeek(),
+            'monthly' => $date->addMonth(),
+            default   => $date->addMonth(),
+        };
+    }
+
+    private function nextDailyDueDate(\Carbon\Carbon $date): \Carbon\Carbon
+    {
+        $date->addDay();
+
+        while ($date->isSunday()) {
+            $date->addDay();
+        }
+
+        return $date;
     }
 
     public function isActive(): bool
@@ -95,5 +116,39 @@ class Loan extends Model
         if ($this->total_due == 0) return 100;
         $paid = $this->total_due - $this->remaining_balance;
         return round(($paid / $this->total_due) * 100, 1);
+    }
+
+    public static function businessDayDiff(\Carbon\Carbon $from, \Carbon\Carbon $to): int
+    {
+        $cursor = $from->copy();
+        $direction = $cursor->lt($to) ? 1 : -1;
+        $steps = 0;
+
+        while (!$cursor->isSameDay($to)) {
+            $cursor->addDays($direction);
+            if ($cursor->isSunday()) {
+                continue; // Minggu dilewati, gak dihitung sebagai langkah
+            }
+            $steps += $direction;
+        }
+
+        return $steps;
+    }
+
+    public static function addBusinessDays(\Carbon\Carbon $date, int $steps): \Carbon\Carbon
+    {
+        $result = $date->copy();
+        $direction = $steps > 0 ? 1 : -1;
+        $remaining = abs($steps);
+
+        while ($remaining > 0) {
+            $result->addDays($direction);
+            if ($result->isSunday()) {
+                continue;
+            }
+            $remaining--;
+        }
+
+        return $result;
     }
 }

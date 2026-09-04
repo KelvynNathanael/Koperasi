@@ -31,4 +31,7 @@ Route::middleware('auth')->group(function () {
     Route::get('cash-flows',         [CashFlowController::class, 'index'])->name('cash-flows.index');
     Route::get('cash-flows/create',  [CashFlowController::class, 'create'])->name('cash-flows.create');
     Route::post('cash-flows',        [CashFlowController::class, 'store'])->name('cash-flows.store');
+
+    Route::patch('loans/installments/{installment}/due-date', [LoanController::class, 'updateInstallmentDueDate'])
+    ->name('loans.installments.update-due-date');
 });

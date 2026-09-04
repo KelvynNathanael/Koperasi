@@ -11,6 +11,8 @@ use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
+use App\Models\LoanInstallment;
+use Illuminate\Http\JsonResponse;
 
 class LoanController extends Controller
 {
@@ -111,4 +113,73 @@ class LoanController extends Controller
 
         return back()->with('success', 'Status pinjaman diperbarui.');
     }
+
+    public function updateInstallmentDueDate(Request $request, LoanInstallment $installment): JsonResponse
+    {
+        if ($installment->status === 'paid') {
+            return response()->json([
+                'message' => 'Cicilan yang sudah lunas tidak bisa diubah jatuh temponya.',
+            ], 422);
+        }
+
+        $data = $request->validate([
+            'due_date' => 'required|date',
+            'cascade'  => 'required|boolean',
+        ]);
+
+        $loan    = $installment->loan;
+        $oldDate = $installment->due_date->copy();
+        $newDate = \Carbon\Carbon::parse($data['due_date']);
+
+        $updatedInstallments = DB::transaction(function () use ($installment, $loan, $oldDate, $newDate, $data) {
+            $installment->due_date = $newDate;
+            $installment->save();
+
+            if (!$data['cascade']) {
+                return collect([$installment]);
+            }
+
+            // Hitung pergeseran: pakai business-day steps kalau daily (biar Sabtu→Senin dihitung 1 langkah, bukan 2),
+            // selain itu (weekly/monthly) pakai selisih kalender biasa karena gak ada aturan skip Minggu di sana.
+            if ($loan->installment_frequency === 'daily') {
+                $steps = Loan::businessDayDiff($oldDate, $newDate);
+            } else {
+                $steps = $oldDate->diffInDays($newDate, false);
+            }
+
+            if ($steps !== 0) {
+                $installment->loan->installments()
+                    ->where('installment_number', '>', $installment->installment_number)
+                    ->where('status', '!=', 'paid')
+                    ->each(function (LoanInstallment $inst) use ($steps, $loan) {
+                        $inst->due_date = $loan->installment_frequency === 'daily'
+                            ? Loan::addBusinessDays($inst->due_date, $steps)
+                            : $inst->due_date->copy()->addDays($steps);
+                        $inst->save();
+                    });
+            }
+
+            return $installment->loan->installments()
+                ->where('installment_number', '>=', $installment->installment_number)
+                ->get();
+        });
+
+        $dayNameMap = [
+            'Sunday' => 'Minggu', 'Monday' => 'Senin', 'Tuesday' => 'Selasa',
+            'Wednesday' => 'Rabu', 'Thursday' => 'Kamis', 'Friday' => 'Jumat', 'Saturday' => 'Sabtu',
+        ];
+
+        return response()->json([
+            'message' => $data['cascade']
+                ? 'Jatuh tempo cicilan #' . $installment->installment_number . ' diubah, cicilan berikutnya ikut menyesuaikan.'
+                : 'Jatuh tempo cicilan #' . $installment->installment_number . ' diubah tanpa mempengaruhi cicilan lain.',
+            'installments' => $updatedInstallments->map(fn ($i) => [
+                'id'           => $i->id,
+                'due_date'     => $i->due_date->format('Y-m-d'),
+                'due_date_fmt' => $i->due_date->format('d/m/Y'),
+                'day_name'     => $dayNameMap[$i->due_date->format('l')],
+            ]),
+        ]);
+    }
+
 }

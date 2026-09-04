@@ -117,6 +117,106 @@
 
 </div>
 
+{{-- ── Jatuh Tempo Hari Ini & Lewat Jatuh Tempo ───────────────── --}}
+<div class="row g-3 mb-4">
+
+    {{-- Harus Dibayar Hari Ini --}}
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-header d-flex align-items-center justify-content-between">
+                <span><i class="bi bi-calendar-check me-2 text-success"></i>Harus Dibayar Hari Ini</span>
+                <span class="badge rounded-pill text-bg-success">{{ $dueTodayList->count() }}</span>
+            </div>
+            <div class="table-responsive" style="max-height: 320px;">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Anggota</th>
+                            <th>Cicilan</th>
+                            <th class="text-end">Tagihan</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($dueTodayList as $inst)
+                            <tr>
+                                <td class="small">
+                                    <div class="fw-semibold">{{ $inst->loan->member->full_name }}</div>
+                                    <div class="text-muted" style="font-size:.75rem;">{{ $inst->loan->member->member_code }}</div>
+                                </td>
+                                <td class="small">
+                                    <a href="{{ route('loans.show', $inst->loan) }}">
+                                        Pinjaman #{{ $inst->loan->id }} · Cicilan #{{ $inst->installment_number }}
+                                    </a>
+                                </td>
+                                <td class="text-end small fw-semibold">
+                                    Rp {{ number_format($inst->scheduled_amount - $inst->paid_amount, 0, ',', '.') }}
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="3" class="text-center text-muted py-4">
+                                    <i class="bi bi-check-circle fs-4 d-block mb-2"></i>
+                                    Tidak ada cicilan jatuh tempo hari ini
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    {{-- Sudah Lewat Jatuh Tempo --}}
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-header d-flex align-items-center justify-content-between">
+                <span><i class="bi bi-exclamation-triangle me-2 text-danger"></i>Sudah Lewat Jatuh Tempo</span>
+                <span class="badge rounded-pill text-bg-danger">{{ $overdueList->count() }}</span>
+            </div>
+            <div class="table-responsive" style="max-height: 320px;">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Anggota</th>
+                            <th>Cicilan</th>
+                            <th class="text-end">Terlambat</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($overdueList as $inst)
+                            <tr class="table-danger bg-opacity-25">
+                                <td class="small">
+                                    <div class="fw-semibold">{{ $inst->loan->member->full_name }}</div>
+                                    <div class="text-muted" style="font-size:.75rem;">{{ $inst->loan->member->member_code }}</div>
+                                </td>
+                                <td class="small">
+                                    <a href="{{ route('loans.show', $inst->loan) }}">
+                                        Pinjaman #{{ $inst->loan->id }} · Cicilan #{{ $inst->installment_number }}
+                                    </a>
+                                    <div class="text-danger" style="font-size:.7rem;">
+                                        Jatuh tempo {{ $inst->due_date->format('d/m/Y') }}
+                                    </div>
+                                </td>
+                                <td class="text-end small fw-semibold text-danger">
+                                    {{ $inst->due_date->diffInDays(now()->startOfDay()) }} hari
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="3" class="text-center text-muted py-4">
+                                    <i class="bi bi-check-circle fs-4 d-block mb-2"></i>
+                                    Tidak ada cicilan yang terlambat
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>
+
 {{-- ── Recent Transactions ─────────────────────────────────── --}}
 <div class="card">
     <div class="card-header d-flex align-items-center justify-content-between">

@@ -34,6 +34,20 @@ class DashboardController extends Controller
             ->where('due_date', '<', now()->toDateString())
             ->count();
 
+        // ── List cicilan jatuh tempo HARI INI ──────────────────────────────────
+        $dueTodayList = LoanInstallment::with('loan.member')
+            ->whereIn('status', ['unpaid', 'partial'])
+            ->whereDate('due_date', now()->toDateString())
+            ->orderBy('due_date')
+            ->get();
+
+        // ── List cicilan yang SUDAH LEWAT jatuh tempo ─────────────────────────
+        $overdueList = LoanInstallment::with('loan.member')
+            ->whereIn('status', ['unpaid', 'partial', 'late'])
+            ->where('due_date', '<', now()->toDateString())
+            ->orderBy('due_date')
+            ->get();
+
         // ── Riwayat transaksi terbaru ─────────────────────────────────────────
         $recentTransactions = CashFlow::with('member')
             ->orderByDesc('transaction_date')
@@ -55,7 +69,7 @@ class DashboardController extends Controller
         return view('dashboard.index', compact(
             'currentCash', 'totalReceivable', 'activeMembers',
             'dueThisMonth', 'overdueInstallments', 'recentTransactions',
-            'cashChart'
+            'cashChart', 'dueTodayList', 'overdueList'
         ));
     }
 }

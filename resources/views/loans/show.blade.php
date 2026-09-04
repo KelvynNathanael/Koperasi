@@ -128,14 +128,22 @@
         <div class="card">
             <div class="card-header d-flex align-items-center justify-content-between">
                 <span><i class="bi bi-list-check me-2 text-primary"></i>Jadwal Cicilan</span>
-                <span class="text-muted small">{{ $loan->installments->count() }} cicilan</span>
+                <div class="d-flex align-items-center gap-2">
+                    <button type="button"
+                            id="toggleDueDateCol"
+                            class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-eye-slash me-1"></i>
+                        <span id="toggleDueDateColLabel">Sembunyikan Jatuh Tempo</span>
+                    </button>
+                    <span class="text-muted small">{{ $loan->installments->count() }} cicilan</span>
+                </div>
             </div>
             <div class="table-responsive">
                 <table class="table table-hover mb-0">
                     <thead>
                         <tr>
                             <th>No.</th>
-                            <th>Jatuh Tempo</th>
+                            <th class="col-due-date">Jatuh Tempo</th>
                             <th>Tagihan</th>
                             <th>Terbayar</th>
                             <th>Sisa</th>
@@ -144,14 +152,37 @@
                         </tr>
                     </thead>
                     <tbody>
+                        @php
+                            $dayNames = [
+                                'Sunday' => 'Minggu', 'Monday' => 'Senin', 'Tuesday' => 'Selasa',
+                                'Wednesday' => 'Rabu', 'Thursday' => 'Kamis', 'Friday' => 'Jumat', 'Saturday' => 'Sabtu',
+                            ];
+                        @endphp
                         @foreach($loan->installments as $inst)
                             <tr class="{{ $inst->isLate() ? 'table-danger bg-opacity-25' : '' }}">
                                 <td class="text-muted small">{{ $inst->installment_number }}</td>
-                                <td class="small">
-                                    {{ $inst->due_date ? $inst->due_date->format('d/m/Y') : '—' }}
-                                    @if($inst->isLate())
-                                        <i class="bi bi-exclamation-circle-fill text-danger ms-1" title="Terlambat"></i>
-                                    @endif
+                                <td class="small col-due-date" id="due-date-cell-{{ $inst->id }}">
+                                    @php
+                                        $dayName = $inst->due_date ? $dayNames[$inst->due_date->format('l')] : null;
+                                    @endphp
+                                    <div class="d-flex align-items-center gap-1">
+                                        <span id="due-date-text-{{ $inst->id }}">
+                                            {{ $inst->due_date ? "$dayName, " . $inst->due_date->format('d/m/Y') : '—' }}
+                                        </span>
+                                        <i class="bi bi-exclamation-circle-fill text-danger {{ $inst->isLate() ? '' : 'd-none' }}"
+                                           id="due-date-late-{{ $inst->id }}" title="Terlambat"></i>
+                                        @if($inst->status !== 'paid')
+                                            <button type="button"
+                                                    class="btn btn-sm btn-link p-0 ms-1 btn-edit-due-date"
+                                                    data-id="{{ $inst->id }}"
+                                                    data-number="{{ $inst->installment_number }}"
+                                                    data-due-date="{{ $inst->due_date?->format('Y-m-d') }}"
+                                                    data-url="{{ route('loans.installments.update-due-date', $inst) }}"
+                                                    title="Ubah jatuh tempo">
+                                                <i class="bi bi-pencil-square"></i>
+                                            </button>
+                                        @endif
+                                    </div>
                                 </td>
                                 <td class="small">Rp {{ number_format($inst->scheduled_amount, 0, ',', '.') }}</td>
                                 <td class="small text-success">Rp {{ number_format($inst->paid_amount, 0, ',', '.') }}</td>
@@ -186,7 +217,7 @@
                                 @foreach($inst->repayments as $rep)
                                     <tr class="bg-light">
                                         <td colspan="1"></td>
-                                        <td class="text-muted" style="font-size:.75rem; padding-left:1.5rem;">
+                                        <td class="text-muted col-due-date" style="font-size:.75rem; padding-left:1.5rem;">
                                             <i class="bi bi-arrow-return-right me-1"></i>
                                             {{ $rep->payment_date->format('d/m/Y') }}
                                         </td>
@@ -209,4 +240,133 @@
 
 </div>
 
+{{-- Edit Due Date Modal --}}
+<div class="modal fade" id="editDueDateModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <form id="editDueDateForm">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h6 class="modal-title">Ubah Jatuh Tempo Cicilan #<span id="editDueDateNumber"></span></h6>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <label class="form-label small">Tanggal Jatuh Tempo Baru</label>
+                    <input type="date" name="due_date" id="editDueDateInput" class="form-control" required>
+
+                    <div class="form-check mt-3">
+                        <input class="form-check-input" type="checkbox" id="editDueDateCascade" checked>
+                        <label class="form-check-label small" for="editDueDateCascade">
+                            Geser cicilan berikutnya juga?
+                        </label>
+                    </div>
+
+                    <div class="text-danger small mt-2 d-none" id="editDueDateError"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-primary btn-sm" id="editDueDateSubmit">Simpan</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
 @endsection
+
+@push('scripts')
+<script>
+    (function () {
+        // ── Toggle kolom Jatuh Tempo ──────────────────────────────
+        const STORAGE_KEY = 'loanShowDueDateCol';
+        const toggleBtn = document.getElementById('toggleDueDateCol');
+        const toggleLabel = document.getElementById('toggleDueDateColLabel');
+        const toggleIcon = toggleBtn.querySelector('i');
+        const cols = document.querySelectorAll('.col-due-date');
+
+        function applyColState(visible) {
+            cols.forEach(el => el.classList.toggle('d-none', !visible));
+            toggleLabel.textContent = visible ? 'Sembunyikan Jatuh Tempo' : 'Tampilkan Jatuh Tempo';
+            toggleIcon.className = visible ? 'bi bi-eye-slash me-1' : 'bi bi-eye me-1';
+        }
+
+        const savedVisible = localStorage.getItem(STORAGE_KEY);
+        let colVisible = savedVisible === null ? true : savedVisible === 'true';
+        applyColState(colVisible);
+
+        toggleBtn.addEventListener('click', function () {
+            colVisible = !colVisible;
+            localStorage.setItem(STORAGE_KEY, colVisible);
+            applyColState(colVisible);
+        });
+
+        const editModalEl = document.getElementById('editDueDateModal');
+        const editModal = new bootstrap.Modal(editModalEl);
+        const editForm = document.getElementById('editDueDateForm');
+        const numberEl = document.getElementById('editDueDateNumber');
+        const dateInput = document.getElementById('editDueDateInput');
+        const errorEl = document.getElementById('editDueDateError');
+        const submitBtn = document.getElementById('editDueDateSubmit');
+        let currentInstallmentId = null;
+        let currentUrl = null;
+
+        document.querySelectorAll('.btn-edit-due-date').forEach(btn => {
+            btn.addEventListener('click', function () {
+                currentInstallmentId = this.dataset.id;
+                currentUrl = this.dataset.url;
+                numberEl.textContent = this.dataset.number;
+                dateInput.value = this.dataset.dueDate;
+                errorEl.classList.add('d-none');
+                editModal.show();
+            });
+        });
+
+        const cascadeCheckbox = document.getElementById('editDueDateCascade');
+
+        editForm.addEventListener('submit', async function (e) {
+            e.preventDefault();
+            errorEl.classList.add('d-none');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Menyimpan...';
+
+            try {
+                const res = await fetch(currentUrl, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'Accept': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        due_date: dateInput.value,
+                        cascade: cascadeCheckbox.checked,
+                    }),
+                });
+
+                const json = await res.json();
+
+                if (!res.ok) {
+                    errorEl.textContent = json.message || 'Terjadi kesalahan.';
+                    errorEl.classList.remove('d-none');
+                    return;
+                }
+
+                json.installments.forEach(inst => {
+                    const textEl = document.getElementById(`due-date-text-${inst.id}`);
+                    if (textEl) textEl.textContent = `${inst.day_name}, ${inst.due_date_fmt}`;
+
+                    const btnEl = document.querySelector(`.btn-edit-due-date[data-id="${inst.id}"]`);
+                    if (btnEl) btnEl.dataset.dueDate = inst.due_date;
+                });
+
+                editModal.hide();
+            } catch (err) {
+                errorEl.textContent = 'Gagal terhubung ke server.';
+                errorEl.classList.remove('d-none');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Simpan';
+            }
+        });
+    })();
+</script>
+@endpush
