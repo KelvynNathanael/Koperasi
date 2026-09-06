@@ -25,15 +25,21 @@ class LoanController extends Controller
                 ->orWhere('member_code', 'ilike', "%$search%"));
         }
 
-        if ($status = $request->input('status')) {
+        $status = $request->query('status');
+
+        if ($status === null) {
+            $query->where('status', 'active');
+        } elseif ($status !== 'all') {
             $query->where('status', $status);
         }
 
         $loans = $query->orderByDesc('created_at')
-        ->paginate(20)
-        ->appends($request->query());
+            ->paginate(20)
+            ->appends($request->query());
 
-        return view('loans.index', compact('loans'));
+        $selectedStatus = $status ?? 'active';
+
+        return view('loans.index', compact('loans', 'selectedStatus'));
     }
 
     public function create(): View
@@ -101,6 +107,28 @@ class LoanController extends Controller
     {
         $loan->load(['member', 'installments.repayments']);
         return view('loans.show', compact('loan'));
+    }
+
+    public function destroy(Loan $loan): RedirectResponse
+    {
+        if (!in_array($loan->status, ['paid', 'cancelled'])) {
+            return back()->with('error', 'Hanya pinjaman dengan status Lunas atau Dibatalkan yang bisa dihapus.');
+        }
+
+        DB::transaction(function () use ($loan) {
+            $old = $loan->toArray();
+
+            $loan->installments()->each(function ($installment) {
+                $installment->repayments()->delete();
+            });
+            $loan->installments()->delete();
+
+            AuditLog::record('loans', $loan->id, 'deleted', $old, null);
+
+            $loan->delete();
+        });
+
+        return redirect()->route('loans.index')->with('success', 'Pinjaman berhasil dihapus.');
     }
 
     public function updateStatus(Request $request, Loan $loan): RedirectResponse

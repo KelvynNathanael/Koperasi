@@ -82,7 +82,7 @@
                 <table class="table table-hover mb-0">
                     <thead>
                         <tr>
-                            <th>#</th>
+                            <th>No.</th>
                             <th>Pokok</th>
                             <th>Total Kewajiban</th>
                             <th>Sisa</th>
@@ -94,7 +94,7 @@
                     <tbody>
                         @forelse($member->loans as $loan)
                             <tr>
-                                <td class="text-muted small">{{ $loan->id }}</td>
+                                <td class="text-muted small">{{ $loop->iteration }}</td>
                                 <td class="small">Rp {{ number_format($loan->principal_amount, 0, ',', '.') }}</td>
                                 <td class="small">Rp {{ number_format($loan->total_due, 0, ',', '.') }}</td>
                                 <td class="small fw-semibold

@@ -135,6 +135,11 @@
                         <i class="bi bi-eye-slash me-1"></i>
                         <span id="toggleDueDateColLabel">Sembunyikan Jatuh Tempo</span>
                     </button>
+                    @if($loan->status !== 'cancelled' && $loan->installments->where('status', '!=', 'paid')->isNotEmpty())
+                        <button type="button" id="toggleBulkMode" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-check2-square me-1"></i> Bayar Bulk
+                        </button>
+                        @endif
                     <span class="text-muted small">{{ $loan->installments->count() }} cicilan</span>
                 </div>
             </div>
@@ -142,7 +147,10 @@
                 <table class="table table-hover mb-0">
                     <thead>
                         <tr>
-                            <th>No.</th>
+                            <th style="width:56px;">
+                                <span id="colNoLabel">No.</span>
+                                <input type="checkbox" class="form-check-input d-none" id="checkAllInstallments">
+                            </th>
                             <th class="col-due-date">Jatuh Tempo</th>
                             <th>Tagihan</th>
                             <th>Terbayar</th>
@@ -160,7 +168,16 @@
                         @endphp
                         @foreach($loan->installments as $inst)
                             <tr class="{{ $inst->isLate() ? 'table-danger bg-opacity-25' : '' }}">
-                                <td class="text-muted small">{{ $inst->installment_number }}</td>
+                                <td class="text-muted small">
+                                    <span class="cell-no-number">{{ $inst->installment_number }}</span>
+                                    <input type="checkbox"
+                                        class="form-check-input d-none installment-checkbox"
+                                        data-id="{{ $inst->id }}"
+                                        data-number="{{ $inst->installment_number }}"
+                                        data-due="{{ $inst->due_date ? $inst->due_date->format('d/m/Y') : '—' }}"
+                                        data-remaining="{{ $inst->remainingDue() }}"
+                                        {{ $inst->status === 'paid' ? 'disabled' : '' }}>
+                                </td>                                
                                 <td class="small col-due-date" id="due-date-cell-{{ $inst->id }}">
                                     @php
                                         $dayName = $inst->due_date ? $dayNames[$inst->due_date->format('l')] : null;
@@ -219,7 +236,7 @@
                                         <td colspan="1"></td>
                                         <td class="text-muted col-due-date" style="font-size:.75rem; padding-left:1.5rem;">
                                             <i class="bi bi-arrow-return-right me-1"></i>
-                                            {{ $rep->payment_date->format('d/m/Y') }}
+                                                Di bayar hari {{ $dayNames[$rep->payment_date->format('l')] }}, {{ $rep->payment_date->format('d/m/Y') }}
                                         </td>
                                         <td colspan="2" style="font-size:.75rem;" class="text-muted">
                                             {{ $rep->notes ?? 'Pembayaran' }}
@@ -234,6 +251,18 @@
                         @endforeach
                     </tbody>
                 </table>
+            </div>
+        </div>
+        <div id="bulkActionBar" class="card mt-3 d-none">
+            <div class="card-body d-flex align-items-center justify-content-between flex-wrap gap-2">
+                <div class="small">
+                    <span class="fw-semibold" id="bulkSelectedCount">0</span> cicilan dipilih
+                    <span class="text-muted">·</span>
+                    Total: <span class="fw-bold text-primary">Rp <span id="bulkSelectedTotal">0</span></span>
+                </div>
+                <button type="button" class="btn btn-success btn-sm" id="btnOpenBulkPay" disabled>
+                    <i class="bi bi-cash-stack me-1"></i> Bayar Cicilan Terpilih
+                </button>
             </div>
         </div>
     </div>
@@ -265,6 +294,58 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Batal</button>
                     <button type="submit" class="btn btn-primary btn-sm" id="editDueDateSubmit">Simpan</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+{{-- bulk bayar Modal --}}
+<div class="modal fade" id="bulkPayModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <form id="bulkPayForm">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h6 class="modal-title">Bayar Cicilan Terpilih</h6>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label small">Tanggal Pembayaran</label>
+                            <input type="date" id="bulkPayDate" name="payment_date" class="form-control" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small">Catatan (opsional, berlaku utk semua)</label>
+                            <input type="text" id="bulkPayNotes" name="notes" class="form-control" placeholder="Catatan pembayaran">
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-sm align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>No.</th>
+                                    <th>Jatuh Tempo</th>
+                                    <th>Sisa Tagihan</th>
+                                    <th style="width:180px;">Jumlah Bayar</th>
+                                </tr>
+                            </thead>
+                            <tbody id="bulkPayItemsBody"></tbody>
+                            <tfoot>
+                                <tr>
+                                    <th colspan="3" class="text-end">Total</th>
+                                    <th id="bulkPayModalTotal">Rp 0</th>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+
+                    <div class="text-danger small mt-2 d-none" id="bulkPayError"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-primary btn-sm" id="bulkPaySubmit">Simpan Pembayaran</button>
                 </div>
             </div>
         </form>
@@ -367,6 +448,134 @@
                 submitBtn.textContent = 'Simpan';
             }
         });
+        // ── Bulk Pay ──────────────────────────────────────────────
+    const toggleBulkBtn = document.getElementById('toggleBulkMode');
+    if (toggleBulkBtn) {
+        const colNoLabel = document.getElementById('colNoLabel');
+        const checkAll = document.getElementById('checkAllInstallments');
+        const bulkBar = document.getElementById('bulkActionBar');
+        const btnOpenBulkPay = document.getElementById('btnOpenBulkPay');
+        let bulkMode = false;
+
+        const getCheckboxes = () => Array.from(document.querySelectorAll('.installment-checkbox'));
+
+        function updateBulkSummary() {
+            const checked = getCheckboxes().filter(cb => cb.checked);
+            const total = checked.reduce((sum, cb) => sum + parseFloat(cb.dataset.remaining || 0), 0);
+            document.getElementById('bulkSelectedCount').textContent = checked.length;
+            document.getElementById('bulkSelectedTotal').textContent =
+                total.toLocaleString('id-ID', { maximumFractionDigits: 0 });
+            btnOpenBulkPay.disabled = checked.length === 0;
+        }
+
+        function setBulkMode(active) {
+            bulkMode = active;
+            toggleBulkBtn.classList.toggle('btn-outline-primary', !active);
+            toggleBulkBtn.classList.toggle('btn-primary', active);
+
+            colNoLabel.classList.toggle('d-none', active);
+            checkAll.classList.toggle('d-none', !active);
+            document.querySelectorAll('.cell-no-number').forEach(el => el.classList.toggle('d-none', active));
+            document.querySelectorAll('.installment-checkbox').forEach(el => el.classList.toggle('d-none', !active));
+
+            bulkBar.classList.toggle('d-none', !active);
+
+            if (!active) {
+                checkAll.checked = false;
+                getCheckboxes().forEach(cb => { cb.checked = false; });
+            }
+            updateBulkSummary();
+        }
+
+        toggleBulkBtn.addEventListener('click', () => setBulkMode(!bulkMode));
+
+        checkAll.addEventListener('change', function () {
+            getCheckboxes().forEach(cb => { if (!cb.disabled) cb.checked = checkAll.checked; });
+            updateBulkSummary();
+        });
+
+        getCheckboxes().forEach(cb => cb.addEventListener('change', updateBulkSummary));
+
+        const bulkModal = new bootstrap.Modal(document.getElementById('bulkPayModal'));
+        const bulkForm = document.getElementById('bulkPayForm');
+        const bulkErrorEl = document.getElementById('bulkPayError');
+        const bulkSubmitBtn = document.getElementById('bulkPaySubmit');
+
+        btnOpenBulkPay.addEventListener('click', function () {
+            const checked = getCheckboxes().filter(cb => cb.checked);
+            if (checked.length === 0) return;
+
+            const tbody = document.getElementById('bulkPayItemsBody');
+            tbody.innerHTML = '';
+            let total = 0;
+
+            checked.forEach(cb => {
+                const remaining = parseFloat(cb.dataset.remaining);
+                total += remaining;
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="small">${cb.dataset.number}</td>
+                    <td class="small">${cb.dataset.due}</td>
+                    <td class="small text-danger">Rp ${remaining.toLocaleString('id-ID', {maximumFractionDigits:0})}</td>
+                    <td>
+                        <input type="number" class="form-control form-control-sm bulk-amount-input"
+                            data-id="${cb.dataset.id}"
+                            value="${remaining}" min="0.01" max="${remaining}" step="0.01" required>
+                    </td>`;
+                tbody.appendChild(row);
+            });
+
+            document.getElementById('bulkPayModalTotal').textContent =
+                'Rp ' + total.toLocaleString('id-ID', { maximumFractionDigits: 0 });
+            document.getElementById('bulkPayDate').value = new Date().toISOString().slice(0, 10);
+            bulkErrorEl.classList.add('d-none');
+            bulkModal.show();
+        });
+
+        bulkForm.addEventListener('submit', async function (e) {
+            e.preventDefault();
+            bulkErrorEl.classList.add('d-none');
+            bulkSubmitBtn.disabled = true;
+            bulkSubmitBtn.textContent = 'Menyimpan...';
+
+            const items = Array.from(document.querySelectorAll('.bulk-amount-input')).map(input => ({
+                installment_id: input.dataset.id,
+                amount: input.value,
+            }));
+
+            try {
+                const res = await fetch('{{ route('repayments.bulk-store', $loan) }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'Accept': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        payment_date: document.getElementById('bulkPayDate').value,
+                        notes: document.getElementById('bulkPayNotes').value,
+                        items,
+                    }),
+                });
+
+                const json = await res.json();
+
+                if (!res.ok) {
+                    bulkErrorEl.textContent = json.message || 'Terjadi kesalahan.';
+                    bulkErrorEl.classList.remove('d-none');
+                    return;
+                }
+
+                window.location.reload();
+            } catch (err) {
+                bulkErrorEl.textContent = 'Gagal terhubung ke server.';
+                bulkErrorEl.classList.remove('d-none');
+            } finally {
+                bulkSubmitBtn.disabled = false;
+                bulkSubmitBtn.textContent = 'Simpan Pembayaran';
+            }
+        });
+    }
     })();
 </script>
 @endpush

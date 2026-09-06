@@ -22,6 +22,7 @@ Route::middleware('auth')->group(function () {
     Route::resource('members', MemberController::class);
 
     Route::resource('loans', LoanController::class)->except(['edit', 'update', 'destroy']);
+    Route::delete('loans/{loan}', [LoanController::class, 'destroy'])->name('loans.destroy');
     Route::patch('loans/{loan}/status', [LoanController::class, 'updateStatus'])->name('loans.update-status');
 
     Route::get('installments/{installment}/pay',  [RepaymentController::class, 'create'])->name('repayments.create');
@@ -34,4 +35,7 @@ Route::middleware('auth')->group(function () {
 
     Route::patch('loans/installments/{installment}/due-date', [LoanController::class, 'updateInstallmentDueDate'])
     ->name('loans.installments.update-due-date');
+
+    Route::post('loans/{loan}/repayments/bulk', [RepaymentController::class, 'bulkStore'])
+    ->name('repayments.bulk-store');
 });

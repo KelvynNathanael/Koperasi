@@ -1,4 +1,5 @@
 @extends('layouts.app')
+@stack('scripts')
 
 @section('title', 'Anggota')
 
@@ -34,9 +35,9 @@
             <div class="col-md-3">
                 <label class="form-label">Status</label>
                 <select name="status" class="form-select">
-                    <option value="">Semua Status</option>
-                    <option value="active"    {{ request('status') === 'active'    ? 'selected' : '' }}>Aktif</option>
-                    <option value="nonactive" {{ request('status') === 'nonactive' ? 'selected' : '' }}>Nonaktif</option>
+                    <option value="all"         {{ $selectedStatus === 'all'       ? 'selected' : '' }}>Semua Status</option>
+                    <option value="active"      {{ $selectedStatus === 'active'    ? 'selected' : '' }}>Aktif</option>
+                    <option value="nonactive"   {{ $selectedStatus === 'nonactive' ? 'selected' : '' }}>Nonaktif</option>
                 </select>
             </div>
             <div class="col-md-auto">
@@ -101,9 +102,9 @@
                                     <i class="bi bi-pencil"></i>
                                 </a>
                                 <form method="POST" action="{{ route('members.destroy', $member) }}"
-                                      onsubmit="return confirm('Hapus anggota ini?')">
+                                    class="form-delete-member" data-name="{{ $member->full_name }}">
                                     @csrf @method('DELETE')
-                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Hapus">
+                                    <button type="button" class="btn btn-sm btn-outline-danger btn-delete-member" title="Hapus">
                                         <i class="bi bi-trash"></i>
                                     </button>
                                 </form>
@@ -134,3 +135,53 @@
 </div>
 
 @endsection
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    @if(session('error'))
+        Swal.fire({
+            icon: 'error',
+            title: 'Gagal Menghapus',
+            text: @json(session('error')),
+            confirmButtonText: 'Mengerti',
+            confirmButtonColor: '#dc3545',
+        });
+    @endif
+
+    @if(session('success'))
+        Swal.fire({
+            icon: 'success',
+            title: 'Berhasil',
+            text: @json(session('success')),
+            confirmButtonColor: '#2563eb',
+            timer: 2000,
+            showConfirmButton: false,
+        });
+    @endif
+
+    document.querySelectorAll('.btn-delete-member').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            const form = btn.closest('.form-delete-member');
+            const name = form.dataset.name;
+
+            Swal.fire({
+                icon: 'warning',
+                title: 'Hapus Anggota?',
+                text: `Anggota "${name}" akan dihapus secara permanen. Tindakan ini tidak dapat dibatalkan.`,
+                showCancelButton: true,
+                confirmButtonText: 'Ya, Hapus',
+                cancelButtonText: 'Batal',
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d',
+                reverseButtons: true,
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    form.submit();
+                }
+            });
+        });
+    });
+});
+</script>
+@endpush

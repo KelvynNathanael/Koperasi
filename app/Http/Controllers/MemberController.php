@@ -8,6 +8,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\View\View;
+use Illuminate\Database\QueryException;
 
 class MemberController extends Controller
 {
@@ -23,13 +24,21 @@ class MemberController extends Controller
             });
         }
 
-        if ($status = $request->input('status')) {
+        $status = $request->query('status');
+
+        if ($status === null) {
+            $query->where('status', 'active');
+        } elseif ($status !== 'all') {
             $query->where('status', $status);
         }
 
-        $members = $query->orderBy('full_name')->paginate(20)->appends($request->query());
+        $members = $query->orderBy('full_name')
+        ->paginate(20)
+        ->appends($request->query());
 
-        return view('members.index', compact('members'));
+        $selectedStatus = $status ?? 'active';
+
+        return view('members.index', compact('members', 'selectedStatus'));
     }
 
     public function create(): View
@@ -89,12 +98,20 @@ class MemberController extends Controller
 
     public function destroy(Member $member): RedirectResponse
     {
-        if ($member->loans()->whereIn('status', ['active', 'overdue'])->exists()) {
-            return back()->with('error', 'Tidak dapat menghapus anggota yang masih memiliki pinjaman aktif.');
+        if ($member->loans()->exists()) {
+            return back()->with('error', 'Tidak dapat menghapus anggota yang masih memiliki riwayat pinjaman.');
         }
 
-        AuditLog::record('members', $member->id, 'deleted', $member->toArray(), null);
-        $member->delete();
+        try {
+            AuditLog::record('members', $member->id, 'deleted', $member->toArray(), null);
+            $member->delete();
+        } catch (QueryException $e) {
+            // 23503 = foreign key violation (PostgreSQL)
+            if ($e->getCode() === '23503') {
+                return back()->with('error', 'Tidak dapat menghapus anggota karena masih terhubung dengan data lain (pinjaman).');
+            }
+            throw $e;
+        }
 
         return redirect()->route('members.index')
             ->with('success', 'Anggota berhasil dihapus.');

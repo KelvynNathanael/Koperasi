@@ -23,7 +23,7 @@
         <table class="table table-hover mb-0">
             <thead>
                 <tr>
-                    <th>#ID</th>
+                    <th>No.</th>
                     <th>Tanggal</th>
                     <th>Anggota</th>
                     <th>Pinjaman</th>
@@ -36,7 +36,7 @@
             <tbody>
                 @forelse($repayments as $rep)
                     <tr>
-                        <td class="text-muted small">{{ $rep->id }}</td>
+                        <td class="text-muted small">{{ $loop->iteration }}</td>
                         <td class="small">{{ $rep->payment_date->format('d/m/Y') }}</td>
                         <td>
                             <div class="fw-semibold small">

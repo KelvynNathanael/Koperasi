@@ -34,11 +34,11 @@
             <div class="col-md-3">
                 <label class="form-label">Status</label>
                 <select name="status" class="form-select">
-                    <option value="">Semua Status</option>
-                    <option value="active"    {{ request('status') === 'active'    ? 'selected' : '' }}>Aktif</option>
-                    <option value="overdue"   {{ request('status') === 'overdue'   ? 'selected' : '' }}>Overdue</option>
-                    <option value="paid"      {{ request('status') === 'paid'      ? 'selected' : '' }}>Lunas</option>
-                    <option value="cancelled" {{ request('status') === 'cancelled' ? 'selected' : '' }}>Dibatalkan</option>
+                    <option value="all"       {{ $selectedStatus === 'all'       ? 'selected' : '' }}>Semua Status</option>
+                    <option value="active"    {{ $selectedStatus === 'active'    ? 'selected' : '' }}>Aktif</option>
+                    <option value="overdue"   {{ $selectedStatus === 'overdue'   ? 'selected' : '' }}>Overdue</option>
+                    <option value="paid"      {{ $selectedStatus === 'paid'      ? 'selected' : '' }}>Lunas</option>
+                    <option value="cancelled" {{ $selectedStatus === 'cancelled' ? 'selected' : '' }}>Dibatalkan</option>
                 </select>
             </div>
             <div class="col-md-auto">
@@ -62,7 +62,7 @@
         <table class="table table-hover mb-0">
             <thead>
                 <tr>
-                    <th>#ID</th>
+                    <th>No.</th>
                     <th>Anggota</th>
                     <th>Pokok</th>
                     <th>Total Kewajiban</th>
@@ -76,7 +76,7 @@
             <tbody>
                 @forelse($loans as $loan)
                     <tr>
-                        <td class="text-muted small">{{ $loan->id }}</td>
+                        <td class="text-muted small">{{ $loop->iteration }}</td>
                         <td>
                             <div class="fw-semibold small">{{ $loan->member->full_name }}</div>
                             <div class="text-muted" style="font-size:.7rem;">{{ $loan->member->member_code }}</div>
@@ -103,9 +103,20 @@
                         </td>
                         <td class="text-center">
                             <a href="{{ route('loans.show', $loan) }}"
-                               class="btn btn-sm btn-outline-primary">
+                            class="btn btn-sm btn-outline-primary">
                                 <i class="bi bi-eye"></i>
                             </a>
+
+                            @if(in_array($loan->status, ['paid', 'cancelled']))
+                                <button type="button"
+                                        class="btn btn-sm btn-outline-danger ms-1"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#deleteLoanModal"
+                                        data-delete-url="{{ route('loans.destroy', $loan) }}"
+                                        data-loan-info="#{{ $loan->id }} – {{ $loan->member->full_name }}">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            @endif
                         </td>
                     </tr>
                 @empty
@@ -130,5 +141,50 @@
         </div>
     @endif
 </div>
+
+{{-- Modal Konfirmasi Hapus --}}
+<div class="modal fade" id="deleteLoanModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-exclamation-triangle text-danger me-1"></i>
+                    Konfirmasi Hapus
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-1">Yakin ingin menghapus pinjaman berikut?</p>
+                <p class="fw-semibold" id="deleteLoanInfo"></p>
+                <p class="text-muted small mb-0">
+                    Tindakan ini tidak bisa dibatalkan. Seluruh jadwal cicilan terkait juga akan ikut terhapus.
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
+                <form id="deleteLoanForm" method="POST" action="">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-trash me-1"></i> Ya, Hapus
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@push('scripts')
+<script>
+    document.getElementById('deleteLoanModal').addEventListener('show.bs.modal', function (event) {
+        const button = event.relatedTarget;
+        const url = button.getAttribute('data-delete-url');
+        const info = button.getAttribute('data-loan-info');
+
+        document.getElementById('deleteLoanForm').setAttribute('action', url);
+        document.getElementById('deleteLoanInfo').textContent = info;
+    });
+</script>
+@endpush
 
 @endsection
