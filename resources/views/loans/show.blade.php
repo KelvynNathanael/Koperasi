@@ -165,6 +165,8 @@
                                 'Sunday' => 'Minggu', 'Monday' => 'Senin', 'Tuesday' => 'Selasa',
                                 'Wednesday' => 'Rabu', 'Thursday' => 'Kamis', 'Friday' => 'Jumat', 'Saturday' => 'Sabtu',
                             ];
+                            // Hanya pembayaran PALING TERAKHIR (secara global di pinjaman ini) yang boleh dibatalkan.
+                            $lastRepaymentId = $loan->installments->flatMap->repayments->sortByDesc('id')->first()?->id;
                         @endphp
                         @foreach($loan->installments as $inst)
                             <tr class="{{ $inst->isLate() ? 'table-danger bg-opacity-25' : '' }}">
@@ -244,7 +246,21 @@
                                         <td class="text-success fw-semibold" style="font-size:.75rem;">
                                             +Rp {{ number_format($rep->amount, 0, ',', '.') }}
                                         </td>
-                                        <td colspan="2"></td>
+                                        <td colspan="2" class="text-center">
+                                            @if($rep->id === $lastRepaymentId && $loan->status !== 'cancelled')
+                                                <button type="button"
+                                                        class="btn btn-sm btn-outline-danger btn-undo-repayment"
+                                                        data-id="{{ $rep->id }}"
+                                                        data-installment-number="{{ $inst->installment_number }}"
+                                                        data-amount="{{ number_format($rep->amount, 0, ',', '.') }}"
+                                                        data-date="{{ $dayNames[$rep->payment_date->format('l')] }}, {{ $rep->payment_date->format('d/m/Y') }}"
+                                                        data-url="{{ route('repayments.destroy', $rep) }}"
+                                                        style="font-size:.7rem; padding:.15rem .5rem;"
+                                                        title="Batalkan pembayaran ini">
+                                                    <i class="bi bi-arrow-counterclockwise"></i> Batalkan
+                                                </button>
+                                            @endif
+                                        </td>
                                     </tr>
                                 @endforeach
                             @endif
@@ -355,6 +371,9 @@
 @endsection
 
 @push('scripts')
+{{-- Hapus baris ini kalau SweetAlert2 sudah dimuat global di layout --}}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
 <script>
     (function () {
         // ── Toggle kolom Jatuh Tempo ──────────────────────────────
@@ -448,6 +467,67 @@
                 submitBtn.textContent = 'Simpan';
             }
         });
+
+        // ── Undo pembayaran terakhir ──────────────────────────────
+        document.querySelectorAll('.btn-undo-repayment').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                const url = this.dataset.url;
+                const number = this.dataset.installmentNumber;
+                const amount = this.dataset.amount;
+                const date = this.dataset.date;
+
+                Swal.fire({
+                    title: 'Batalkan Pembayaran?',
+                    html: `Pembayaran cicilan <b>#${number}</b> sebesar <b>Rp ${amount}</b>
+                           pada <b>${date}</b> akan dibatalkan dan dihapus dari arus kas.<br><br>
+                           Tindakan ini tidak bisa diurungkan. Lanjutkan?`,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Ya, Batalkan',
+                    cancelButtonText: 'Tidak',
+                    confirmButtonColor: '#dc3545',
+                    cancelButtonColor: '#6c757d',
+                    reverseButtons: true,
+                }).then((result) => {
+                    if (!result.isConfirmed) return;
+
+                    Swal.fire({
+                        title: 'Memproses...',
+                        allowOutsideClick: false,
+                        didOpen: () => Swal.showLoading(),
+                    });
+
+                    fetch(url, {
+                        method: 'DELETE',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                            'Accept': 'application/json',
+                        },
+                    })
+                        .then(async (res) => {
+                            const json = await res.json();
+
+                            if (!res.ok) {
+                                Swal.fire('Gagal', json.message || 'Terjadi kesalahan.', 'error');
+                                return;
+                            }
+
+                            Swal.fire({
+                                title: 'Berhasil',
+                                text: json.message,
+                                icon: 'success',
+                                timer: 1200,
+                                showConfirmButton: false,
+                            }).then(() => window.location.reload());
+                        })
+                        .catch(function () {
+                            Swal.fire('Gagal', 'Gagal terhubung ke server.', 'error');
+                        });
+                });
+            });
+        });
+
         // ── Bulk Pay ──────────────────────────────────────────────
     const toggleBulkBtn = document.getElementById('toggleBulkMode');
     if (toggleBulkBtn) {

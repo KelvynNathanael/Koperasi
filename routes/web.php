@@ -38,4 +38,7 @@ Route::middleware('auth')->group(function () {
 
     Route::post('loans/{loan}/repayments/bulk', [RepaymentController::class, 'bulkStore'])
     ->name('repayments.bulk-store');
+
+    Route::delete('/repayments/{repayment}', [RepaymentController::class, 'destroy'])
+    ->name('repayments.destroy');
 });

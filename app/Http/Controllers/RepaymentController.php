@@ -106,6 +106,56 @@ class RepaymentController extends Controller
         ]);
     }
 
+    /**
+     * Batalkan (undo) sebuah pembayaran.
+     *
+     * Rule: hanya pembayaran yang PALING TERAKHIR dicatat di seluruh pinjaman
+     * (bukan hanya per cicilan) yang boleh dibatalkan. Ini mencegah pembatalan
+     * riwayat pembayaran lama yang bisa merusak konsistensi saldo/arus kas,
+     * dan cocok untuk kasus "salah pencet konfirmasi" — cukup undo aksi terakhir.
+     */
+    public function destroy(Repayment $repayment): JsonResponse
+    {
+        $installment = $repayment->installment;
+        $loan        = $installment->loan;
+
+        if ($loan->status === 'cancelled') {
+            return response()->json([
+                'message' => 'Pinjaman ini sudah dibatalkan, riwayat pembayaran tidak bisa diubah.',
+            ], 422);
+        }
+
+        $lastRepaymentId = Repayment::whereIn(
+            'installment_id',
+            $loan->installments()->pluck('id')
+        )->max('id');
+
+        if ($repayment->id !== $lastRepaymentId) {
+            return response()->json([
+                'message' => 'Hanya pembayaran paling terakhir yang bisa dibatalkan. Batalkan dulu pembayaran yang lebih baru.',
+            ], 422);
+        }
+
+        DB::transaction(function () use ($repayment, $installment, $loan) {
+            $old = $repayment->toArray();
+
+            CashFlow::where('reference_type', 'repayments')
+                ->where('reference_id', $repayment->id)
+                ->delete();
+
+            $repayment->delete();
+
+            $installment->syncStatus();
+            $loan->syncBalance();
+
+            AuditLog::record('repayments', $old['id'], 'deleted', $old, null);
+        });
+
+        return response()->json([
+            'message' => "Pembayaran cicilan #{$installment->installment_number} berhasil dibatalkan.",
+        ]);
+    }
+
     private function recordRepayment(LoanInstallment $installment, float $amount, string $paymentDate, ?string $notes): Repayment
     {
         $repayment = Repayment::create([
