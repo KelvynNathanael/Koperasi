@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\LoansExport;
 use App\Models\AuditLog;
 use App\Models\CashFlow;
 use App\Models\Loan;
@@ -13,6 +14,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 use App\Models\LoanInstallment;
 use Illuminate\Http\JsonResponse;
+use Maatwebsite\Excel\Facades\Excel;
 
 class LoanController extends Controller
 {
@@ -47,6 +49,20 @@ class LoanController extends Controller
         $selectedFrequency = $frequency ?? 'all';
 
         return view('loans.index', compact('loans', 'selectedStatus', 'selectedFrequency'));
+    }
+
+    /**
+     * Export daftar pinjaman (menghormati filter search/status/frequency aktif) ke Excel.
+     */
+    public function exportExcel(Request $request)
+    {
+        $export = new LoansExport(
+            $request->input('search'),
+            $request->query('status', 'active'),
+            $request->query('frequency', 'all'),
+        );
+
+        return Excel::download($export, 'daftar-pinjaman-' . now()->format('Y-m-d') . '.xlsx');
     }
 
     public function create(): View

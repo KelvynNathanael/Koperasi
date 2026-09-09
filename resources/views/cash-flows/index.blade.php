@@ -13,9 +13,14 @@
         <h4 class="fw-bold mb-0">Kas & Arus Dana</h4>
         <p class="text-muted small mb-0">Catatan seluruh transaksi keuangan koperasi</p>
     </div>
-    <a href="{{ route('cash-flows.create') }}" class="btn btn-primary">
-        <i class="bi bi-plus-lg me-1"></i> Tambah Transaksi
-    </a>
+    <div class="d-flex gap-2">
+        <a href="{{ route('cash-flows.export-excel', request()->query()) }}" class="btn btn-outline-success">
+            <i class="bi bi-file-earmark-excel me-1"></i> Export Excel
+        </a>
+        <a href="{{ route('cash-flows.create') }}" class="btn btn-primary">
+            <i class="bi bi-plus-lg me-1"></i> Tambah Transaksi
+        </a>
+    </div>
 </div>
 
 {{-- Summary Stats --}}
@@ -82,6 +87,34 @@
                     <i class="bi bi-funnel me-1"></i> Filter
                 </button>
                 <a href="{{ route('cash-flows.index') }}" class="btn btn-outline-secondary btn-sm ms-1">Reset</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+{{-- Rekap Bulanan (PDF) --}}
+<div class="card mb-4">
+    <div class="card-body py-3">
+        <form method="GET" action="{{ route('cash-flows.export-recap-pdf') }}" class="row g-2 align-items-end">
+            <div class="col-auto">
+                <label class="form-label small mb-0"><i class="bi bi-file-earmark-pdf me-1 text-danger"></i>Rekap Bulanan</label>
+                <select name="month" class="form-select form-select-sm">
+                    @foreach (['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'] as $i => $m)
+                        <option value="{{ $i + 1 }}" {{ now()->month === $i + 1 ? 'selected' : '' }}>{{ $m }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="col-auto">
+                <select name="year" class="form-select form-select-sm">
+                    @for ($y = now()->year; $y >= now()->year - 4; $y--)
+                        <option value="{{ $y }}" {{ now()->year === $y ? 'selected' : '' }}>{{ $y }}</option>
+                    @endfor
+                </select>
+            </div>
+            <div class="col-auto">
+                <button type="submit" class="btn btn-outline-danger btn-sm">
+                    <i class="bi bi-download me-1"></i> Unduh PDF
+                </button>
             </div>
         </form>
     </div>

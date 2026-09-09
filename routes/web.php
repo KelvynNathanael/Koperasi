@@ -24,6 +24,7 @@ Route::middleware('auth')->group(function () {
     Route::resource('loans', LoanController::class)->except(['edit', 'update', 'destroy']);
     Route::delete('loans/{loan}', [LoanController::class, 'destroy'])->name('loans.destroy');
     Route::patch('loans/{loan}/status', [LoanController::class, 'updateStatus'])->name('loans.update-status');
+    Route::get('loans/export/excel', [LoanController::class, 'exportExcel'])->name('loans.export-excel');
 
     Route::get('installments/{installment}/pay',  [RepaymentController::class, 'create'])->name('repayments.create');
     Route::post('installments/{installment}/pay', [RepaymentController::class, 'store'])->name('repayments.store');
@@ -32,6 +33,8 @@ Route::middleware('auth')->group(function () {
     Route::get('cash-flows',         [CashFlowController::class, 'index'])->name('cash-flows.index');
     Route::get('cash-flows/create',  [CashFlowController::class, 'create'])->name('cash-flows.create');
     Route::post('cash-flows',        [CashFlowController::class, 'store'])->name('cash-flows.store');
+    Route::get('cash-flows/export/excel',     [CashFlowController::class, 'exportExcel'])->name('cash-flows.export-excel');
+    Route::get('cash-flows/export/recap-pdf', [CashFlowController::class, 'exportRecapPdf'])->name('cash-flows.export-recap-pdf');
 
     Route::patch('loans/installments/{installment}/due-date', [LoanController::class, 'updateInstallmentDueDate'])
     ->name('loans.installments.update-due-date');

@@ -13,9 +13,14 @@
         <h4 class="fw-bold mb-0">Daftar Pinjaman</h4>
         <p class="text-muted small mb-0">Kelola pinjaman anggota koperasi</p>
     </div>
-    <a href="{{ route('loans.create') }}" class="btn btn-primary">
-        <i class="bi bi-plus-lg me-1"></i> Buat Pinjaman
-    </a>
+    <div class="d-flex gap-2">
+        <a href="{{ route('loans.export-excel', request()->query()) }}" class="btn btn-outline-success">
+            <i class="bi bi-file-earmark-excel me-1"></i> Export Excel
+        </a>
+        <a href="{{ route('loans.create') }}" class="btn btn-primary">
+            <i class="bi bi-plus-lg me-1"></i> Buat Pinjaman
+        </a>
+    </div>
 </div>
 
 {{-- Filter --}}
