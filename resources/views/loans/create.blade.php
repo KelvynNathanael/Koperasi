@@ -26,7 +26,7 @@
                     <i class="bi bi-cash-stack me-2 text-primary"></i>Detail Pinjaman
                 </div>
                 <div class="card-body p-4">
-                    <form method="POST" action="{{ route('loans.store') }}" id="loanForm">
+                    <form method="POST" action="{{ route('loans.store') }}" id="loanForm" data-loading-text="Menyimpan pinjaman...">
                         @csrf
 
                         <div class="mb-3">

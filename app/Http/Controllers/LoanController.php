@@ -33,13 +33,20 @@ class LoanController extends Controller
             $query->where('status', $status);
         }
 
+        $frequency = $request->query('frequency');
+
+        if ($frequency && $frequency !== 'all') {
+            $query->where('installment_frequency', $frequency);
+        }
+
         $loans = $query->orderByDesc('created_at')
             ->paginate(20)
             ->appends($request->query());
 
-        $selectedStatus = $status ?? 'active';
+        $selectedStatus    = $status ?? 'active';
+        $selectedFrequency = $frequency ?? 'all';
 
-        return view('loans.index', compact('loans', 'selectedStatus'));
+        return view('loans.index', compact('loans', 'selectedStatus', 'selectedFrequency'));
     }
 
     public function create(): View
@@ -59,6 +66,12 @@ class LoanController extends Controller
             'start_date'             => 'required|date',
             'notes'                  => 'nullable|string',
         ]);
+
+        $lock = \Illuminate\Support\Facades\Cache::lock('loan-create-' . auth()->id(), 5);
+        
+        if (! $lock->get()) {
+            return back()->with('error', 'Permintaan sedang diproses, coba lagi sebentar.');
+        }
 
         DB::transaction(function () use ($data) {
             $principal = $data['principal_amount'];

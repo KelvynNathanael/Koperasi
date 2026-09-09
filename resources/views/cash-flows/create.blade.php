@@ -26,7 +26,7 @@
                 <i class="bi bi-journal-plus me-2 text-primary"></i>Detail Transaksi
             </div>
             <div class="card-body p-4">
-                <form method="POST" action="{{ route('cash-flows.store') }}">
+                <form method="POST" action="{{ route('cash-flows.store') }}" data-loading-text="Menyimpan transaksi...">
                     @csrf
 
                     <div class="mb-3">

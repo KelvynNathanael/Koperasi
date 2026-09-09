@@ -77,7 +77,7 @@
                 <i class="bi bi-cash me-2 text-primary"></i>Form Pembayaran
             </div>
             <div class="card-body p-4">
-                <form method="POST" action="{{ route('repayments.store', $installment) }}" id="paymentForm">
+                <form method="POST" action="{{ route('repayments.store', $installment) }}" id="paymentForm" data-loading-text="Menyimpan pembayaran...">
                     @csrf
 
                     <div class="mb-3">

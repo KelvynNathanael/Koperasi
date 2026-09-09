@@ -52,7 +52,7 @@
         <form method="GET" class="row g-2 align-items-end">
             <div class="col-md-2">
                 <label class="form-label">Tipe</label>
-                <select name="flow_type" class="form-select form-select-sm">
+                <select name="flow_type" class="form-select form-select-sm" onchange="this.form.submit()">
                     <option value="">Semua</option>
                     <option value="in"  {{ request('flow_type') === 'in'  ? 'selected' : '' }}>Masuk</option>
                     <option value="out" {{ request('flow_type') === 'out' ? 'selected' : '' }}>Keluar</option>
@@ -60,7 +60,7 @@
             </div>
             <div class="col-md-3">
                 <label class="form-label">Kategori</label>
-                <select name="category" class="form-select form-select-sm">
+                <select name="category" class="form-select form-select-sm" onchange="this.form.submit()">
                     <option value="">Semua Kategori</option>
                     <option value="contribution"      {{ request('category') === 'contribution'      ? 'selected' : '' }}>Iuran / Kontribusi</option>
                     <option value="loan_disbursement" {{ request('category') === 'loan_disbursement' ? 'selected' : '' }}>Pencairan Pinjaman</option>
@@ -71,11 +71,11 @@
             </div>
             <div class="col-md-2">
                 <label class="form-label">Dari</label>
-                <input type="date" name="from" class="form-control form-control-sm" value="{{ request('from') }}">
+                <input type="date" name="from" class="form-control form-control-sm" value="{{ request('from') }}" onchange="this.form.submit()">
             </div>
             <div class="col-md-2">
                 <label class="form-label">Sampai</label>
-                <input type="date" name="to" class="form-control form-control-sm" value="{{ request('to') }}">
+                <input type="date" name="to" class="form-control form-control-sm" value="{{ request('to') }}" onchange="this.form.submit()">
             </div>
             <div class="col-md-auto">
                 <button type="submit" class="btn btn-primary btn-sm">

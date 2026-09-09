@@ -26,7 +26,7 @@
                 <i class="bi bi-person-plus me-2 text-primary"></i>Data Anggota
             </div>
             <div class="card-body p-4">
-                <form method="POST" action="{{ route('members.store') }}">
+                <form method="POST" action="{{ route('members.store') }}" data-loading-text="Menyimpan anggota...">
                     @csrf
 
                     <div class="mb-3">

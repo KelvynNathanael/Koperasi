@@ -33,12 +33,21 @@
             </div>
             <div class="col-md-3">
                 <label class="form-label">Status</label>
-                <select name="status" class="form-select">
+                <select name="status" class="form-select" onchange="this.form.submit()">
                     <option value="all"       {{ $selectedStatus === 'all'       ? 'selected' : '' }}>Semua Status</option>
                     <option value="active"    {{ $selectedStatus === 'active'    ? 'selected' : '' }}>Aktif</option>
                     <option value="overdue"   {{ $selectedStatus === 'overdue'   ? 'selected' : '' }}>Overdue</option>
                     <option value="paid"      {{ $selectedStatus === 'paid'      ? 'selected' : '' }}>Lunas</option>
                     <option value="cancelled" {{ $selectedStatus === 'cancelled' ? 'selected' : '' }}>Dibatalkan</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Frekuensi Cicilan</label>
+                <select name="frequency" class="form-select" onchange="this.form.submit()">
+                    <option value="all"     {{ $selectedFrequency === 'all'     ? 'selected' : '' }}>Semua Frekuensi</option>
+                    <option value="daily"   {{ $selectedFrequency === 'daily'   ? 'selected' : '' }}>Harian</option>
+                    <option value="weekly"  {{ $selectedFrequency === 'weekly'  ? 'selected' : '' }}>Mingguan</option>
+                    <option value="monthly" {{ $selectedFrequency === 'monthly' ? 'selected' : '' }}>Bulanan</option>
                 </select>
             </div>
             <div class="col-md-auto">

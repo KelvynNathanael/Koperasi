@@ -66,10 +66,48 @@ class DashboardController extends Controller
             ->orderBy('month')
             ->get();
 
+        // ── Pencairan pinjaman bulan ini ("omset penyaluran") ───────────────────
+        $monthlyDisbursement = CashFlow::where('category', 'loan_disbursement')
+            ->whereMonth('transaction_date', now()->month)
+            ->whereYear('transaction_date', now()->year)
+            ->sum('amount');
+
+        // ── Cicilan masuk bulan ini ("omset penerimaan") ─────────────────────────
+        $monthlyRepaymentIn = CashFlow::where('category', 'repayment')
+            ->whereMonth('transaction_date', now()->month)
+            ->whereYear('transaction_date', now()->year)
+            ->sum('amount');
+
+        // ── Laba (bunga terealisasi) bulan ini ───────────────────────────────────
+        // ASUMSI: reference_type pada baris cash_flows berkategori 'repayment'
+        // diisi 'loans' dan reference_id = loans.id (mengikuti pola Loan::cashFlows()).
+        // Kalau ternyata reference_type = 'loan_installments', join ini harus
+        // diubah lewat tabel loan_installments dulu. Cek di kode yang membuat
+        // CashFlow untuk pembayaran cicilan sebelum pakai angka ini di produksi.
+        $monthlyProfit = DB::table('cash_flows')
+            ->join('repayments', function ($join) {
+                $join->on('cash_flows.reference_id', '=', 'repayments.id')
+                    ->where('cash_flows.reference_type', '=', 'repayments');
+            })
+            ->join('loan_installments', 'repayments.installment_id', '=', 'loan_installments.id')
+            ->join('loans', 'loan_installments.loan_id', '=', 'loans.id')
+            ->where('cash_flows.category', 'repayment')
+            ->whereMonth('cash_flows.transaction_date', now()->month)
+            ->whereYear('cash_flows.transaction_date', now()->year)
+            ->selectRaw('
+                COALESCE(SUM(
+                    repayments.amount
+                    * (loans.total_due - loans.principal_amount)
+                    / NULLIF(loans.total_due, 0)
+                ), 0) as profit
+            ')
+            ->value('profit');
+
         return view('dashboard.index', compact(
             'currentCash', 'totalReceivable', 'activeMembers',
             'dueThisMonth', 'overdueInstallments', 'recentTransactions',
-            'cashChart', 'dueTodayList', 'overdueList'
+            'cashChart', 'dueTodayList', 'overdueList',
+            'monthlyDisbursement', 'monthlyRepaymentIn', 'monthlyProfit'
         ));
     }
 }

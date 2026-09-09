@@ -61,6 +61,35 @@
 
 </div>
 
+{{-- ── Ringkasan Keuangan Bulan Ini ──────────────────────────
+<div class="row g-3 mb-4">
+
+    <div class="col-sm-6 col-xl-6">
+        <div class="stat-card card" style="background: linear-gradient(135deg, #7c3aed, #6d28d9);">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="stat-label">Pencairan Pinjaman Bulan Ini</div>
+                    <div class="stat-value">Rp {{ number_format($monthlyDisbursement, 0, ',', '.') }}</div>
+                </div>
+                <div class="stat-icon"><i class="bi bi-send-check"></i></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-sm-6 col-xl-6">
+        <div class="stat-card card" style="background: linear-gradient(135deg, #0d9488, #0f766e);">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="stat-label">Cicilan Masuk Bulan Ini</div>
+                    <div class="stat-value">Rp {{ number_format($monthlyRepaymentIn, 0, ',', '.') }}</div>
+                </div>
+                <div class="stat-icon"><i class="bi bi-arrow-down-circle"></i></div>
+            </div>
+        </div>
+    </div>
+
+</div> --}}
+
 {{-- ── Second Row ──────────────────────────────────────────── --}}
 <div class="row g-3 mb-4">
 

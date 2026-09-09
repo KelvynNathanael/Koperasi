@@ -34,7 +34,7 @@
             </div>
             <div class="col-md-3">
                 <label class="form-label">Status</label>
-                <select name="status" class="form-select">
+                <select name="status" class="form-select" onchange="this.form.submit()">
                     <option value="all"         {{ $selectedStatus === 'all'       ? 'selected' : '' }}>Semua Status</option>
                     <option value="active"      {{ $selectedStatus === 'active'    ? 'selected' : '' }}>Aktif</option>
                     <option value="nonactive"   {{ $selectedStatus === 'nonactive' ? 'selected' : '' }}>Nonaktif</option>
