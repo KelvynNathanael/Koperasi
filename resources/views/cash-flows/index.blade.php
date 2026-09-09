@@ -50,6 +50,17 @@
 <div class="card mb-4">
     <div class="card-body py-3">
         <form method="GET" class="row g-2 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label">Anggota</label>
+                <select name="member_id" class="form-select form-select-sm" onchange="this.form.submit()">
+                    <option value="">Semua Anggota</option>
+                    @foreach($members as $m)
+                        <option value="{{ $m->id }}" {{ (string) request('member_id') === (string) $m->id ? 'selected' : '' }}>
+                            {{ $m->full_name }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
             <div class="col-md-2">
                 <label class="form-label">Tipe</label>
                 <select name="flow_type" class="form-select form-select-sm" onchange="this.form.submit()">
@@ -62,11 +73,8 @@
                 <label class="form-label">Kategori</label>
                 <select name="category" class="form-select form-select-sm" onchange="this.form.submit()">
                     <option value="">Semua Kategori</option>
-                    <option value="contribution"      {{ request('category') === 'contribution'      ? 'selected' : '' }}>Iuran / Kontribusi</option>
                     <option value="loan_disbursement" {{ request('category') === 'loan_disbursement' ? 'selected' : '' }}>Pencairan Pinjaman</option>
                     <option value="repayment"         {{ request('category') === 'repayment'         ? 'selected' : '' }}>Pembayaran Cicilan</option>
-                    <option value="expense"           {{ request('category') === 'expense'           ? 'selected' : '' }}>Biaya Operasional</option>
-                    <option value="adjustment"        {{ request('category') === 'adjustment'        ? 'selected' : '' }}>Penyesuaian</option>
                 </select>
             </div>
             <div class="col-md-2">

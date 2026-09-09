@@ -96,7 +96,7 @@ class Loan extends Model
     }
 
     private function nextDailyDueDate(\Carbon\Carbon $date): \Carbon\Carbon
-    {
+    {   
         $date->addDay();
 
         while ($date->isSunday()) {

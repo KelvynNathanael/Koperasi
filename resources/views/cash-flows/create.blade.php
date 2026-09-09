@@ -61,11 +61,8 @@
                             <select name="category"
                                     class="form-select @error('category') is-invalid @enderror" required>
                                 <option value="">— Pilih —</option>
-                                <option value="contribution"      {{ old('category') === 'contribution'      ? 'selected' : '' }}>Iuran / Kontribusi</option>
                                 <option value="loan_disbursement" {{ old('category') === 'loan_disbursement' ? 'selected' : '' }}>Pencairan Pinjaman</option>
                                 <option value="repayment"         {{ old('category') === 'repayment'         ? 'selected' : '' }}>Pembayaran Cicilan</option>
-                                <option value="expense"           {{ old('category') === 'expense'           ? 'selected' : '' }}>Biaya Operasional</option>
-                                <option value="adjustment"        {{ old('category') === 'adjustment'        ? 'selected' : '' }}>Penyesuaian</option>
                             </select>
                             @error('category')
                                 <div class="invalid-feedback">{{ $message }}</div>

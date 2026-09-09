@@ -87,6 +87,7 @@
                                     <option value="daily"   {{ old('installment_frequency') === 'daily'   ? 'selected' : '' }}>Harian</option>
                                     <option value="weekly"  {{ old('installment_frequency') === 'weekly'  ? 'selected' : '' }}>Mingguan</option>
                                     <option value="monthly" {{ old('installment_frequency', 'monthly') === 'monthly' ? 'selected' : '' }}>Bulanan</option>
+                                    <option value="tempo"   {{ old('installment_frequency') === 'tempo'   ? 'selected' : '' }}>Tempo</option>
                                 </select>
                                 @error('installment_frequency')
                                     <div class="invalid-feedback">{{ $message }}</div>
@@ -508,8 +509,26 @@
 
         const fmt = n => 'Rp ' + new Intl.NumberFormat('id').format(Math.round(n));
 
-        const freqLabel = { daily: 'hari', weekly: 'minggu', monthly: 'bulan' };
-        const freqNoun  = { daily: 'Hari', weekly: 'Minggu', monthly: 'Bulan' };
+        const freqLabel = { daily: 'hari', weekly: 'minggu', monthly: 'bulan', tempo: 'tempo' };
+        const freqNoun  = { daily: 'Hari', weekly: 'Minggu', monthly: 'Bulan', tempo: 'Tempo' };
+
+        const durationInput = document.getElementById('duration');
+        const frequencySelect = document.getElementById('frequency');
+
+        function toggleDurationLock() {
+            const isTempo = frequencySelect.value === 'tempo';
+            durationInput.readOnly = isTempo;
+            durationInput.classList.toggle('bg-light', isTempo);
+            if (isTempo) {
+                durationInput.value = 1;
+            }
+        }
+
+        durationInput.addEventListener('input', function () {
+            if (frequencySelect.value === 'tempo' && this.value != 1) {
+                this.value = 1;
+            }
+        });
 
         function recalc() {
             const p = parseInt(document.getElementById('principal').value || '0', 10);
@@ -541,6 +560,8 @@
             document.getElementById(id).addEventListener('input', recalc);
         });
 
+        frequencySelect.addEventListener('change', toggleDurationLock);
+        toggleDurationLock();
         recalc();
     </script>
 @endpush

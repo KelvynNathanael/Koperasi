@@ -61,7 +61,7 @@ class LoanController extends Controller
             'member_id'              => 'required|exists:members,id',
             'principal_amount'       => 'required|numeric|min:1',
             'interest_percent'       => 'required|numeric|min:0|max:100',
-            'installment_frequency'  => 'required|in:daily,weekly,monthly',
+            'installment_frequency'  => 'required|in:daily,weekly,monthly,tempo',
             'duration_months'        => 'required|integer|min:1|max:360',
             'start_date'             => 'required|date',
             'notes'                  => 'nullable|string',
@@ -135,6 +135,11 @@ class LoanController extends Controller
                 $installment->repayments()->delete();
             });
             $loan->installments()->delete();
+
+            // Hapus juga cash flow terkait (mis. pencairan pinjaman) biar saldo kas gak nyangkut
+            CashFlow::where('reference_type', 'loans')
+                ->where('reference_id', $loan->id)
+                ->delete();
 
             AuditLog::record('loans', $loan->id, 'deleted', $old, null);
 

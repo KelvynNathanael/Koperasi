@@ -103,11 +103,37 @@ class DashboardController extends Controller
             ')
             ->value('profit');
 
+            // ── Pengeluaran aktif: kas yang udah keluar untuk pinjaman aktif/overdue,
+            // dikurangi kas yang udah balik dari pinjaman-pinjaman itu ─────────────
+            $activeLoanIds = Loan::whereIn('status', ['active', 'overdue'])->pluck('id');
+
+            $activeDisbursed = CashFlow::where('category', 'loan_disbursement')
+                ->where('reference_type', 'loans')
+                ->whereIn('reference_id', $activeLoanIds)
+                ->sum('amount');
+
+            $activeCollected = DB::table('cash_flows')
+                ->join('repayments', function ($join) {
+                    $join->on('cash_flows.reference_id', '=', 'repayments.id')
+                        ->where('cash_flows.reference_type', '=', 'repayments');
+                })
+                ->join('loan_installments', 'repayments.installment_id', '=', 'loan_installments.id')
+                ->whereIn('loan_installments.loan_id', $activeLoanIds)
+                ->where('cash_flows.category', 'repayment')
+                ->sum('cash_flows.amount');
+
+            $activeOutstandingCash = $activeDisbursed - $activeCollected;
+
+            $totalRealizedProfit = Loan::where('status', 'paid')
+            ->selectRaw('COALESCE(SUM(total_due - principal_amount), 0) as profit')
+            ->value('profit');
+
         return view('dashboard.index', compact(
             'currentCash', 'totalReceivable', 'activeMembers',
             'dueThisMonth', 'overdueInstallments', 'recentTransactions',
             'cashChart', 'dueTodayList', 'overdueList',
-            'monthlyDisbursement', 'monthlyRepaymentIn', 'monthlyProfit'
+            'monthlyDisbursement', 'monthlyRepaymentIn', 'monthlyProfit', 'activeOutstandingCash', 
+            'totalRealizedProfit',
         ));
     }
 }

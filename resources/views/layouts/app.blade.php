@@ -423,6 +423,7 @@
 
 
         // ui block, usage = data-loading-text="{messages} in form tag"
+        // gamau pake = data-no-block, contoh <form id="editDueDateForm" data-no-block>
         document.addEventListener('submit', function (e) {
             const form = e.target;
             if (form.hasAttribute('data-no-block')) return;

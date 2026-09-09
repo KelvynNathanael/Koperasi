@@ -36,7 +36,6 @@
                 <select name="status" class="form-select" onchange="this.form.submit()">
                     <option value="all"       {{ $selectedStatus === 'all'       ? 'selected' : '' }}>Semua Status</option>
                     <option value="active"    {{ $selectedStatus === 'active'    ? 'selected' : '' }}>Aktif</option>
-                    <option value="overdue"   {{ $selectedStatus === 'overdue'   ? 'selected' : '' }}>Overdue</option>
                     <option value="paid"      {{ $selectedStatus === 'paid'      ? 'selected' : '' }}>Lunas</option>
                     <option value="cancelled" {{ $selectedStatus === 'cancelled' ? 'selected' : '' }}>Dibatalkan</option>
                 </select>
@@ -48,6 +47,7 @@
                     <option value="daily"   {{ $selectedFrequency === 'daily'   ? 'selected' : '' }}>Harian</option>
                     <option value="weekly"  {{ $selectedFrequency === 'weekly'  ? 'selected' : '' }}>Mingguan</option>
                     <option value="monthly" {{ $selectedFrequency === 'monthly' ? 'selected' : '' }}>Bulanan</option>
+                    <option value="tempo"   {{ $selectedFrequency === 'tempo'   ? 'selected' : '' }}>Tempo</option>
                 </select>
             </div>
             <div class="col-md-auto">
@@ -101,6 +101,7 @@
                             {{ match($loan->installment_frequency) {
                                 'daily'   => 'hari',
                                 'weekly'  => 'minggu',
+                                'tempo'    => 'tempo',
                                 default   => 'bln',
                             } }}
                         </td>

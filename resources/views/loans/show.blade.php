@@ -27,7 +27,7 @@
             <i class="bi bi-pencil me-1"></i> Ubah Status
         </button>
         <ul class="dropdown-menu dropdown-menu-end">
-            @foreach(['active' => 'Aktif', 'overdue' => 'Overdue', 'cancelled' => 'Dibatalkan'] as $val => $label)
+            @foreach(['active' => 'Aktif', 'cancelled' => 'Dibatalkan'] as $val => $label)
                 @if($loan->status !== $val)
                     <li>
                         <form method="POST" action="{{ route('loans.update-status', $loan) }}">
@@ -84,6 +84,7 @@
                         {{ match($loan->installment_frequency) {
                             'daily'   => 'hari',
                             'weekly'  => 'minggu',
+                            'tempo'    => 'tempo',
                             default   => 'bulan',
                         } }}
                     </span>
@@ -288,7 +289,7 @@
 {{-- Edit Due Date Modal --}}
 <div class="modal fade" id="editDueDateModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
-        <form id="editDueDateForm">
+        <form id="editDueDateForm" data-no-block>
             <div class="modal-content">
                 <div class="modal-header">
                     <h6 class="modal-title">Ubah Jatuh Tempo Cicilan #<span id="editDueDateNumber"></span></h6>
@@ -296,7 +297,12 @@
                 </div>
                 <div class="modal-body">
                     <label class="form-label small">Tanggal Jatuh Tempo Baru</label>
-                    <input type="date" name="due_date" id="editDueDateInput" class="form-control" required>
+                    <div class="position-relative">
+                        <input type="text" id="editDueDateDisplay" class="form-control" readonly autocomplete="off"
+                               placeholder="Pilih tanggal" style="cursor:pointer; background:#fff;">
+                        <i class="bi bi-calendar3" style="position:absolute; right:14px; top:50%; transform:translateY(-50%); color:#6c757d; pointer-events:none;"></i>
+                    </div>
+                    <input type="hidden" name="due_date" id="editDueDateInput" required>
 
                     <div class="form-check mt-3">
                         <input class="form-check-input" type="checkbox" id="editDueDateCascade" checked>
@@ -329,7 +335,12 @@
                     <div class="row g-3 mb-3">
                         <div class="col-md-6">
                             <label class="form-label small">Tanggal Pembayaran</label>
-                            <input type="date" id="bulkPayDate" name="payment_date" class="form-control" required>
+                            <div class="position-relative">
+                                <input type="text" id="bulkPayDateDisplay" class="form-control" readonly autocomplete="off"
+                                       placeholder="Pilih tanggal" style="cursor:pointer; background:#fff;">
+                                <i class="bi bi-calendar3" style="position:absolute; right:14px; top:50%; transform:translateY(-50%); color:#6c757d; pointer-events:none;"></i>
+                            </div>
+                            <input type="hidden" id="bulkPayDate" name="payment_date" required>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label small">Catatan (opsional, berlaku utk semua)</label>
@@ -370,12 +381,275 @@
 
 @endsection
 
+@push('styles')
+<style>
+/* ===== Kalender custom (bukan native, bukan flatpickr) ===== */
+#custom-cal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, .55);
+    z-index: 99999;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+}
+
+#custom-cal-overlay.show { display: flex; }
+
+#custom-cal-modal {
+    background: #fff;
+    width: 100%;
+    max-width: 340px;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, .35);
+    animation: ccalIn .15s ease-out;
+}
+
+@keyframes ccalIn {
+    from { opacity: 0; transform: scale(.94); }
+    to   { opacity: 1; transform: scale(1); }
+}
+
+.ccal-header {
+    display: flex;
+    align-items: center;
+    background: #2563eb;
+    padding: 14px 44px;
+    position: relative;
+}
+
+.ccal-title {
+    flex: 1;
+    text-align: center;
+    color: #fff;
+    font-weight: 600;
+    font-size: 1rem;
+}
+
+.ccal-nav {
+    background: transparent;
+    border: none;
+    color: #fff;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.ccal-nav:hover { background: rgba(255, 255, 255, .15); }
+
+.ccal-close {
+    background: transparent;
+    border: none;
+    color: #fff;
+    position: absolute;
+    right: 8px;
+    top: 12px;
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: .85rem;
+}
+
+.ccal-close:hover { background: rgba(255, 255, 255, .15); }
+
+.ccal-weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    padding: 10px 10px 0;
+    text-align: center;
+}
+
+.ccal-weekdays div {
+    color: #64748b;
+    font-size: .7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.ccal-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+    padding: 8px 10px 6px;
+}
+
+.ccal-day {
+    height: 40px;
+    border: none;
+    background: transparent;
+    border-radius: 10px;
+    font-size: .9rem;
+    font-weight: 500;
+    color: #1e293b;
+}
+
+.ccal-day:hover { background: #eff6ff; }
+.ccal-day-muted { color: #cbd5e1; }
+.ccal-day-today { border: 2px solid #16a34a; font-weight: 700; }
+
+.ccal-day-selected {
+    background: #2563eb !important;
+    color: #fff;
+    font-weight: 700;
+}
+
+.ccal-footer {
+    padding: 4px 12px 14px;
+    display: flex;
+    justify-content: center;
+}
+</style>
+@endpush
+
 @push('scripts')
 {{-- Hapus baris ini kalau SweetAlert2 sudah dimuat global di layout --}}
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
     (function () {
+        // ── Custom Calendar (reusable, dipakai utk 2 input di halaman ini) ──
+        const monthNames = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+        const dayNamesShort = ['Min','Sen','Sel','Rab','Kam','Jum','Sab'];
+        const dayNamesFullCal = { 0:'Minggu', 1:'Senin', 2:'Selasa', 3:'Rabu', 4:'Kamis', 5:'Jumat', 6:'Sabtu' };
+
+        function parseISODate(str) {
+            if (!str) return null;
+            const [y, m, d] = str.split('-').map(Number);
+            if (!y || !m || !d) return null;
+            return new Date(y, m - 1, d);
+        }
+        function toISODate(date) {
+            const y = date.getFullYear();
+            const m = String(date.getMonth() + 1).padStart(2, '0');
+            const d = String(date.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        }
+        function formatIndo(date) {
+            const day = dayNamesFullCal[date.getDay()];
+            const d = String(date.getDate()).padStart(2, '0');
+            const m = String(date.getMonth() + 1).padStart(2, '0');
+            const y = date.getFullYear();
+            return `${day}, ${d}/${m}/${y}`;
+        }
+
+        const calOverlay = document.createElement('div');
+        calOverlay.id = 'custom-cal-overlay';
+        calOverlay.innerHTML = `
+            <div id="custom-cal-modal">
+                <div class="ccal-header">
+                    <button type="button" class="ccal-nav" id="ccal-prev"><i class="bi bi-chevron-left"></i></button>
+                    <div class="ccal-title" id="ccal-title"></div>
+                    <button type="button" class="ccal-nav" id="ccal-next"><i class="bi bi-chevron-right"></i></button>
+                    <button type="button" class="ccal-close" id="ccal-close"><i class="bi bi-x-lg"></i></button>
+                </div>
+                <div class="ccal-weekdays">${dayNamesShort.map(d => `<div>${d}</div>`).join('')}</div>
+                <div class="ccal-grid" id="ccal-grid"></div>
+                <div class="ccal-footer">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="ccal-today">Hari Ini</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(calOverlay);
+
+        const calTitleEl = calOverlay.querySelector('#ccal-title');
+        const calGridEl = calOverlay.querySelector('#ccal-grid');
+        let calCtx = null;
+
+        function renderCalendarGrid() {
+            calTitleEl.textContent = `${monthNames[calCtx.viewMonth]} ${calCtx.viewYear}`;
+            const firstDayOfMonth = new Date(calCtx.viewYear, calCtx.viewMonth, 1);
+            const startWeekday = firstDayOfMonth.getDay();
+            const daysInMonth = new Date(calCtx.viewYear, calCtx.viewMonth + 1, 0).getDate();
+            const daysInPrevMonth = new Date(calCtx.viewYear, calCtx.viewMonth, 0).getDate();
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const selNorm = new Date(calCtx.selectedDate.getFullYear(), calCtx.selectedDate.getMonth(), calCtx.selectedDate.getDate());
+
+            let cells = [];
+            for (let i = startWeekday - 1; i >= 0; i--) {
+                cells.push({ date: new Date(calCtx.viewYear, calCtx.viewMonth - 1, daysInPrevMonth - i), inMonth: false });
+            }
+            for (let d = 1; d <= daysInMonth; d++) {
+                cells.push({ date: new Date(calCtx.viewYear, calCtx.viewMonth, d), inMonth: true });
+            }
+            while (cells.length % 7 !== 0) {
+                const next = new Date(cells[cells.length - 1].date);
+                next.setDate(next.getDate() + 1);
+                cells.push({ date: next, inMonth: false });
+            }
+
+            calGridEl.innerHTML = cells.map(cell => {
+                const isToday = cell.date.getTime() === today.getTime();
+                const isSelected = cell.date.getTime() === selNorm.getTime();
+                let classes = 'ccal-day';
+                if (!cell.inMonth) classes += ' ccal-day-muted';
+                if (isToday) classes += ' ccal-day-today';
+                if (isSelected) classes += ' ccal-day-selected';
+                return `<button type="button" class="${classes}" data-date="${toISODate(cell.date)}">${cell.date.getDate()}</button>`;
+            }).join('');
+        }
+
+        function openCustomCalendar(displayEl, hiddenEl) {
+            const initial = parseISODate(hiddenEl.value) || new Date();
+            calCtx = { displayEl, hiddenEl, selectedDate: initial, viewYear: initial.getFullYear(), viewMonth: initial.getMonth() };
+            renderCalendarGrid();
+            calOverlay.classList.add('show');
+            document.body.style.overflow = 'hidden';
+        }
+        function closeCustomCalendar() {
+            calOverlay.classList.remove('show');
+            document.body.style.overflow = '';
+        }
+        function setCalendarInputs(date) {
+            calCtx.selectedDate = date;
+            calCtx.displayEl.value = formatIndo(date);
+            calCtx.hiddenEl.value = toISODate(date);
+        }
+
+        calOverlay.querySelector('#ccal-close').addEventListener('click', closeCustomCalendar);
+        calOverlay.querySelector('#ccal-prev').addEventListener('click', function () {
+            calCtx.viewMonth--; if (calCtx.viewMonth < 0) { calCtx.viewMonth = 11; calCtx.viewYear--; }
+            renderCalendarGrid();
+        });
+        calOverlay.querySelector('#ccal-next').addEventListener('click', function () {
+            calCtx.viewMonth++; if (calCtx.viewMonth > 11) { calCtx.viewMonth = 0; calCtx.viewYear++; }
+            renderCalendarGrid();
+        });
+        calOverlay.querySelector('#ccal-today').addEventListener('click', function () {
+            setCalendarInputs(new Date());
+            closeCustomCalendar();
+        });
+        calGridEl.addEventListener('click', function (e) {
+            const btn = e.target.closest('.ccal-day');
+            if (!btn) return;
+            const [y, m, d] = btn.dataset.date.split('-').map(Number);
+            setCalendarInputs(new Date(y, m - 1, d));
+            closeCustomCalendar();
+        });
+
+        function bindCustomCalendarInput(displayId, hiddenId) {
+            const displayEl = document.getElementById(displayId);
+            const hiddenEl = document.getElementById(hiddenId);
+            if (!displayEl || !hiddenEl) return;
+            if (hiddenEl.value) displayEl.value = formatIndo(parseISODate(hiddenEl.value));
+            displayEl.addEventListener('click', () => openCustomCalendar(displayEl, hiddenEl));
+        }
+
+        bindCustomCalendarInput('editDueDateDisplay', 'editDueDateInput');
+        bindCustomCalendarInput('bulkPayDateDisplay', 'bulkPayDate');
+
+        // ── Tap di backdrop sengaja tidak menutup modal kalender --
+        // user harus pilih tanggal atau pencet tombol tutup (X).
+
         // ── Toggle kolom Jatuh Tempo ──────────────────────────────
         const STORAGE_KEY = 'loanShowDueDateCol';
         const toggleBtn = document.getElementById('toggleDueDateCol');
@@ -404,6 +678,7 @@
         const editForm = document.getElementById('editDueDateForm');
         const numberEl = document.getElementById('editDueDateNumber');
         const dateInput = document.getElementById('editDueDateInput');
+        const editDueDateDisplay = document.getElementById('editDueDateDisplay');
         const errorEl = document.getElementById('editDueDateError');
         const submitBtn = document.getElementById('editDueDateSubmit');
         let currentInstallmentId = null;
@@ -415,6 +690,7 @@
                 currentUrl = this.dataset.url;
                 numberEl.textContent = this.dataset.number;
                 dateInput.value = this.dataset.dueDate;
+                editDueDateDisplay.value = dateInput.value ? formatIndo(parseISODate(dateInput.value)) : '';
                 errorEl.classList.add('d-none');
                 editModal.show();
             });
@@ -607,7 +883,11 @@
 
             document.getElementById('bulkPayModalTotal').textContent =
                 'Rp ' + total.toLocaleString('id-ID', { maximumFractionDigits: 0 });
-            document.getElementById('bulkPayDate').value = new Date().toISOString().slice(0, 10);
+
+            const todayDate = new Date();
+            document.getElementById('bulkPayDate').value = toISODate(todayDate);
+            document.getElementById('bulkPayDateDisplay').value = formatIndo(todayDate);
+
             bulkErrorEl.classList.add('d-none');
             bulkModal.show();
         });

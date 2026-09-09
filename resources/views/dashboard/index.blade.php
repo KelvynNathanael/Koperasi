@@ -61,6 +61,33 @@
 
 </div>
 
+<div class="row g-3 mb-4">
+    <div class="col-sm-6 col-xl-4">
+        <div class="stat-card card" style="background: linear-gradient(135deg, #7c3aed, #6d28d9);">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="stat-label">Pengeluaran Aktif</div>
+                    <div class="stat-value">Rp {{ number_format($activeOutstandingCash, 0, ',', '.') }}</div>
+                    <div class="text-white-50" style="font-size:.7rem;">Kas keluar yang belum kembali dari pinjaman aktif</div>
+                </div>
+                <div class="stat-icon"><i class="bi bi-send-check"></i></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-4">
+    <div class="stat-card card" style="background: linear-gradient(135deg, #16a34a, #15803d);">
+        <div class="d-flex justify-content-between align-items-start">
+            <div>
+                <div class="stat-label">Untung Terealisasi</div>
+                <div class="stat-value">Rp {{ number_format($totalRealizedProfit, 0, ',', '.') }}</div>
+                <div class="text-white-50" style="font-size:.7rem;">Dari pinjaman yang sudah lunas total</div>
+            </div>
+            <div class="stat-icon"><i class="bi bi-piggy-bank"></i></div>
+        </div>
+    </div>
+</div>
+</div>
+
 {{-- ── Ringkasan Keuangan Bulan Ini ──────────────────────────
 <div class="row g-3 mb-4">
 

@@ -106,6 +106,7 @@
                                     {{ match($loan->installment_frequency) {
                                         'daily'   => 'hari',
                                         'weekly'  => 'minggu',
+                                        'tempo'    => 'tempo',
                                         default   => 'bln',
                                     } }}
                                 </td>

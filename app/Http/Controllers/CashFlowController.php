@@ -40,8 +40,9 @@ class CashFlowController extends Controller
         $balance  = CashFlow::currentBalance();
         $totalIn  = CashFlow::where('flow_type', 'in')->sum('amount');
         $totalOut = CashFlow::where('flow_type', 'out')->sum('amount');
+        $members  = Member::orderBy('full_name')->get();
 
-        return view('cash-flows.index', compact('cashFlows', 'balance', 'totalIn', 'totalOut'));
+        return view('cash-flows.index', compact('cashFlows', 'balance', 'totalIn', 'totalOut', 'members'));
     }
 
     public function create(): View
