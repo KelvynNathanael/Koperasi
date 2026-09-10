@@ -41,4 +41,7 @@ Route::middleware('auth')->group(function () {
 
     Route::delete('/repayments/{repayment}', [RepaymentController::class, 'destroy'])
     ->name('repayments.destroy');
+
+    Route::delete('cash-flows/{cashFlow}', [CashFlowController::class, 'destroy'])
+    ->name('cash-flows.destroy');
 });

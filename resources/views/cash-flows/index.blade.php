@@ -129,13 +129,28 @@
                             {{ $cf->description ? \Str::limit($cf->description, 50) : '—' }}
                         </td>
                         <td class="text-end fw-semibold small
-                            {{ $cf->flow_type === 'in' ? 'text-success' : 'text-danger' }}">
-                            {{ $cf->flow_type === 'in' ? '+' : '-' }}Rp {{ number_format($cf->amount, 0, ',', '.') }}
+                        {{ $cf->flow_type === 'in' ? 'text-success' : 'text-danger' }}">
+                        {{ $cf->flow_type === 'in' ? '+' : '-' }}Rp {{ number_format($cf->amount, 0, ',', '.') }}
+                        </td>
+                        <td class="text-end">
+                            <form action="{{ route('cash-flows.destroy', $cf) }}" method="POST"
+                                class="d-inline js-delete-cashflow"
+                                data-loading-text="Menghapus..."
+                                data-no-block
+                                data-desc="{{ $cf->description ? \Str::limit($cf->description, 40) : ($cf->flow_type === 'in' ? 'Pemasukan' : 'Pengeluaran') }}"
+                                data-amount="Rp {{ number_format($cf->amount, 0, ',', '.') }}"
+                                >
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Hapus">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
                         </td>
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="6" class="text-center text-muted py-5">
+                        <td colspan="7" class="text-center text-muted py-5">
                             <i class="bi bi-inbox fs-3 d-block mb-2"></i>
                             Tidak ada transaksi ditemukan
                         </td>
@@ -155,5 +170,38 @@
         </div>
     @endif
 </div>
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.js-delete-cashflow').forEach(function (form) {
+        form.addEventListener('submit', function (e) {
+            e.preventDefault();
+
+            const desc = form.dataset.desc;
+            const amount = form.dataset.amount;
+
+            Swal.fire({
+                title: 'Hapus Transaksi?',
+                html: `Transaksi <b>${desc}</b><br>
+                       sebesar <b>${amount}</b> akan dihapus.<br><br>
+                       Saldo kas akan ikut berubah. Lanjutkan?`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Ya, Hapus',
+                cancelButtonText: 'Batal',
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d',
+                reverseButtons: true,
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    form.submit();
+                }
+            });
+        });
+    });
+});
+</script>
+@endpush
 
 @endsection

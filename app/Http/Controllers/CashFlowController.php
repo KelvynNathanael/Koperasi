@@ -32,6 +32,10 @@ class CashFlowController extends Controller
             $query->where('transaction_date', '<=', $to);
         }
 
+        if ($member = $request->input('member_id')) {
+            $query->where('member_id', $member);
+        }
+
         $cashFlows = $query->orderByDesc('transaction_date')
             ->orderByDesc('id')
             ->paginate(25)
@@ -67,5 +71,17 @@ class CashFlowController extends Controller
 
         return redirect()->route('cash-flows.index')
             ->with('success', 'Transaksi kas berhasil dicatat.');
+    }
+
+    public function destroy(CashFlow $cashFlow): RedirectResponse
+    {
+        $old = $cashFlow->toArray();
+
+        $cashFlow->delete();
+
+        AuditLog::record('cash_flows', $cashFlow->id, 'deleted', $old, null);
+
+        return redirect()->route('cash-flows.index')
+            ->with('success', 'Transaksi kas berhasil dihapus.');
     }
 }
