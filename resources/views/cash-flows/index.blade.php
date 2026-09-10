@@ -135,7 +135,6 @@
                         <td class="text-end">
                             <form action="{{ route('cash-flows.destroy', $cf) }}" method="POST"
                                 class="d-inline js-delete-cashflow"
-                                data-loading-text="Menghapus..."
                                 data-no-block
                                 data-desc="{{ $cf->description ? \Str::limit($cf->description, 40) : ($cf->flow_type === 'in' ? 'Pemasukan' : 'Pengeluaran') }}"
                                 data-amount="Rp {{ number_format($cf->amount, 0, ',', '.') }}"
