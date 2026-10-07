@@ -21,7 +21,7 @@
 {{-- Filter --}}
 <div class="card mb-4">
     <div class="card-body py-3">
-        <form method="GET" class="row g-2 align-items-end">
+        <form method="GET" class="row g-2 align-items-end" data-no-block>
             <div class="col-md-5">
                 <label class="form-label">Cari Anggota</label>
                 <div class="input-group">
@@ -172,7 +172,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
-                <form id="deleteLoanForm" method="POST" action="">
+                <form id="deleteLoanForm" method="POST" action="" data-no-block>
                     @csrf
                     @method('DELETE')
                     <button type="submit" class="btn btn-danger">

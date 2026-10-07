@@ -49,7 +49,7 @@
 {{-- Filters --}}
 <div class="card mb-4">
     <div class="card-body py-3">
-        <form method="GET" class="row g-2 align-items-end">
+        <form method="GET" class="row g-2 align-items-end" data-no-block>
             <div class="col-md-3">
                 <label class="form-label">Anggota</label>
                 <select name="member_id" class="form-select form-select-sm" onchange="this.form.submit()">

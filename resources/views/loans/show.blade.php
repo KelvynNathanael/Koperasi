@@ -30,7 +30,7 @@
             @foreach(['active' => 'Aktif', 'cancelled' => 'Dibatalkan'] as $val => $label)
                 @if($loan->status !== $val)
                     <li>
-                        <form method="POST" action="{{ route('loans.update-status', $loan) }}">
+                        <form method="POST" action="{{ route('loans.update-status', $loan) }}" data-no-block>
                             @csrf @method('PATCH')
                             <input type="hidden" name="status" value="{{ $val }}">
                             <button type="submit" class="dropdown-item">{{ $label }}</button>
@@ -325,7 +325,7 @@
 {{-- bulk bayar Modal --}}
 <div class="modal fade" id="bulkPayModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg">
-        <form id="bulkPayForm">
+        <form id="bulkPayForm" data-no-block>
             <div class="modal-content">
                 <div class="modal-header">
                     <h6 class="modal-title">Bayar Cicilan Terpilih</h6>

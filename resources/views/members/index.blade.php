@@ -22,7 +22,7 @@
 {{-- Filter --}}
 <div class="card mb-4">
     <div class="card-body py-3">
-        <form method="GET" class="row g-2 align-items-end">
+        <form method="GET" class="row g-2 align-items-end" data-no-block>
             <div class="col-md-5">
                 <label class="form-label">Cari</label>
                 <div class="input-group">
@@ -102,7 +102,7 @@
                                     <i class="bi bi-pencil"></i>
                                 </a>
                                 <form method="POST" action="{{ route('members.destroy', $member) }}"
-                                    class="form-delete-member" data-name="{{ $member->full_name }}">
+                                    class="form-delete-member" data-name="{{ $member->full_name }}" data-no-block>
                                     @csrf @method('DELETE')
                                     <button type="button" class="btn btn-sm btn-outline-danger btn-delete-member" title="Hapus">
                                         <i class="bi bi-trash"></i>

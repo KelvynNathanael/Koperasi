@@ -22,6 +22,30 @@ class Loan extends Model
         'start_date'        => 'date:Y-m-d',
     ];
 
+    public const FREQUENCY_LABELS = [
+        'daily'   => 'Harian',
+        'weekly'  => 'Mingguan',
+        'monthly' => 'Bulanan',
+        'tempo'   => 'Tempo',
+    ];
+
+    public const FREQUENCY_BADGES = [
+        'daily'   => 'bg-warning text-dark',
+        'weekly'  => 'bg-info text-dark',
+        'monthly' => 'bg-primary',
+        'tempo'   => 'bg-dark',
+    ];
+
+    public function getFrequencyLabelAttribute(): string
+    {
+        return self::FREQUENCY_LABELS[$this->installment_frequency] ?? '-';
+    }
+
+    public function getFrequencyBadgeClassAttribute(): string
+    {
+        return self::FREQUENCY_BADGES[$this->installment_frequency] ?? 'bg-secondary';
+    }
+
     // ── Relations ──────────────────────────────────────────────────────────────
     public function member(): BelongsTo
     {
@@ -64,6 +88,20 @@ class Loan extends Model
      */
     public function generateInstallments(): void
     {
+        if ($this->installment_frequency === 'tempo') {
+            LoanInstallment::create([
+                'loan_id'            => $this->id,
+                'installment_number' => 1,
+                'due_date'           => \Carbon\Carbon::parse($this->start_date)
+                                            ->addMonths($this->duration_months)
+                                            ->toDateString(),
+                'scheduled_amount'   => (float) $this->total_due,
+                'paid_amount'        => 0,
+                'status'             => 'unpaid',
+            ]);
+
+            return;
+        }
         $per = bcdiv((string) $this->total_due, (string) $this->duration_months, 2);
 
         $totalScheduled = bcmul($per, (string) ($this->duration_months - 1), 2);

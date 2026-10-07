@@ -183,42 +183,51 @@
                 <span><i class="bi bi-calendar-check me-2 text-success"></i>Harus Dibayar Hari Ini</span>
                 <span class="badge rounded-pill text-bg-success">{{ $dueTodayList->count() }}</span>
             </div>
-            <div class="table-responsive" style="max-height: 320px;">
-                <table class="table table-hover mb-0">
-                    <thead>
-                        <tr>
-                            <th>Anggota</th>
-                            <th>Cicilan</th>
-                            <th class="text-end">Tagihan</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse($dueTodayList as $inst)
+                <div class="table-responsive" style="max-height: 320px;">
+                    <table class="table table-hover mb-0">
+                        <thead>
                             <tr>
-                                <td class="small">
-                                    <div class="fw-semibold">{{ $inst->loan->member->full_name }}</div>
-                                    <div class="text-muted" style="font-size:.75rem;">{{ $inst->loan->member->member_code }}</div>
-                                </td>
-                                <td class="small">
-                                    <a href="{{ route('loans.show', $inst->loan) }}">
-                                        Pinjaman #{{ $inst->loan->id }} · Cicilan #{{ $inst->installment_number }}
-                                    </a>
-                                </td>
-                                <td class="text-end small fw-semibold">
-                                    Rp {{ number_format($inst->scheduled_amount - $inst->paid_amount, 0, ',', '.') }}
-                                </td>
+                                <th>Anggota</th>
+                                <th>Tipe</th>
+                                <th>Cicilan</th>
+                                <th class="text-end">Tagihan</th>
                             </tr>
-                        @empty
-                            <tr>
-                                <td colspan="3" class="text-center text-muted py-4">
-                                    <i class="bi bi-check-circle fs-4 d-block mb-2"></i>
-                                    Tidak ada cicilan jatuh tempo hari ini
-                                </td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
+                        </thead>
+                        <tbody>
+                            @forelse($dueTodayList as $inst)
+                                <tr>
+                                    <td class="small">
+                                        <div class="fw-semibold">{{ $inst->loan->member->full_name }}</div>
+                                        <div class="text-muted" style="font-size:.75rem;">{{ $inst->loan->member->member_code }}</div>
+                                    </td>
+                                    <td class="small">
+                                        <span class="badge {{ $inst->loan->frequency_badge_class }}">{{ $inst->loan->frequency_label }}</span>
+                                    </td>
+                                    <td class="small">
+                                        <a href="{{ route('loans.show', $inst->loan) }}">
+                                            Pinjaman #{{ $inst->loan->id }} ·
+                                            @if($inst->loan->installment_frequency === 'tempo')
+                                                Pelunasan Tempo
+                                            @else
+                                                Cicilan #{{ $inst->installment_number }}
+                                            @endif
+                                        </a>
+                                    </td>
+                                    <td class="text-end small fw-semibold">
+                                        Rp {{ number_format($inst->scheduled_amount - $inst->paid_amount, 0, ',', '.') }}
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="4" class="text-center text-muted py-4">
+                                        <i class="bi bi-check-circle fs-4 d-block mb-2"></i>
+                                        Tidak ada cicilan jatuh tempo hari ini
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
         </div>
     </div>
 
@@ -234,6 +243,7 @@
                     <thead>
                         <tr>
                             <th>Anggota</th>
+                            <th>Tipe</th>
                             <th>Cicilan</th>
                             <th class="text-end">Terlambat</th>
                         </tr>
@@ -246,8 +256,16 @@
                                     <div class="text-muted" style="font-size:.75rem;">{{ $inst->loan->member->member_code }}</div>
                                 </td>
                                 <td class="small">
+                                        <span class="badge {{ $inst->loan->frequency_badge_class }}">{{ $inst->loan->frequency_label }}</span>
+                                    </td>
+                                <td class="small">
                                     <a href="{{ route('loans.show', $inst->loan) }}">
-                                        Pinjaman #{{ $inst->loan->id }} · Cicilan #{{ $inst->installment_number }}
+                                        Pinjaman #{{ $inst->loan->id }} ·
+                                        @if($inst->loan->installment_frequency === 'tempo')
+                                            Pelunasan Tempo
+                                        @else
+                                            Cicilan #{{ $inst->installment_number }}
+                                        @endif
                                     </a>
                                     <div class="text-danger" style="font-size:.7rem;">
                                         Jatuh tempo {{ $inst->due_date->format('d/m/Y') }}

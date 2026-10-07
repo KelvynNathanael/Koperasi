@@ -27,7 +27,7 @@
                 <i class="bi bi-pencil me-2 text-primary"></i>Edit Data Anggota
             </div>
             <div class="card-body p-4">
-                <form method="POST" action="{{ route('members.update', $member) }}">
+                <form method="POST" action="{{ route('members.update', $member) }}" data-no-block>
                     @csrf @method('PUT')
 
                     <div class="mb-3">
