@@ -63,20 +63,6 @@
                     <span class="text-muted small">Pokok</span>
                     <span class="small fw-semibold">Rp {{ number_format($loan->principal_amount, 0, ',', '.') }}</span>
                 </li>
-                <li class="list-group-item d-flex justify-content-between py-3 px-4">
-                    <span class="text-muted small">Bunga</span>
-                    <span class="small fw-semibold">{{ $loan->interest_percent }}%</span>
-                </li>
-                <li class="list-group-item d-flex justify-content-between py-3 px-4">
-                    <span class="text-muted small">Total Kewajiban</span>
-                    <span class="small fw-bold text-primary">Rp {{ number_format($loan->total_due, 0, ',', '.') }}</span>
-                </li>
-                <li class="list-group-item d-flex justify-content-between py-3 px-4">
-                    <span class="text-muted small">Sisa Hutang</span>
-                    <span class="small fw-bold {{ $loan->remaining_balance > 0 ? 'text-danger' : 'text-success' }}">
-                        Rp {{ number_format($loan->remaining_balance, 0, ',', '.') }}
-                    </span>
-                </li>
                 @php
                     $firstInstallment = $loan->installments->first();
                     $installmentAmount = $firstInstallment?->scheduled_amount ?? 0;
@@ -102,6 +88,20 @@
                 <li class="list-group-item d-flex justify-content-between py-3 px-4">
                     <span class="text-muted small">Tanggal Mulai</span>
                     <span class="small fw-semibold">{{ $loan->start_date->format('d/m/Y') }}</span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between py-3 px-4">
+                    <span class="text-muted small">Total Kewajiban</span>
+                    <span class="small fw-bold text-primary">Rp {{ number_format($loan->total_due, 0, ',', '.') }}</span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between py-3 px-4">
+                    <span class="text-muted small">Sisa Hutang</span>
+                    <span class="small fw-bold {{ $loan->remaining_balance > 0 ? 'text-danger' : 'text-success' }}">
+                        Rp {{ number_format($loan->remaining_balance, 0, ',', '.') }}
+                    </span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between py-3 px-4">
+                    <span class="text-muted small">Bunga</span>
+                    <span class="small fw-semibold">{{ $loan->interest_percent }}%</span>
                 </li>
             </ul>
         </div>
