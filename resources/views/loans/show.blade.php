@@ -77,6 +77,16 @@
                         Rp {{ number_format($loan->remaining_balance, 0, ',', '.') }}
                     </span>
                 </li>
+                @php
+                    $firstInstallment = $loan->installments->first();
+                    $installmentAmount = $firstInstallment?->scheduled_amount ?? 0;
+                @endphp
+                <li class="list-group-item d-flex justify-content-between py-3 px-4">
+                    <span class="text-muted small">Bayar per Cicilan</span>
+                    <span class="small fw-bold">
+                        Rp {{ number_format($installmentAmount, 0, ',', '.') }}
+                    </span>
+                </li>
                 <li class="list-group-item d-flex justify-content-between py-3 px-4">
                     <span class="text-muted small">Durasi</span>
                     <span class="small fw-semibold">
